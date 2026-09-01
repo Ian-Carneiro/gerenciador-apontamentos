@@ -425,6 +425,66 @@ class ApontamentoService:
     def dividir(self, apontamento_id: int, horario_corte: datetime):
         return self._repo.dividir(apontamento_id, horario_corte)
 
+    def inserir_apontamento(
+        self,
+        apt_referencia: Apontamento,
+        posicao: str,  # "antes" | "depois"
+        projeto: str,
+        tarefa: str,
+        horario: datetime,
+        nota: str = "",
+    ) -> Apontamento:
+        """
+        Insere um novo apontamento antes ou depois de `apt_referencia`,
+        deslocando o vizinho correspondente para evitar buraco/sobreposição
+        (mesma lógica de slide usada em ajustar_inicio/ajustar_fim).
+        """
+        if posicao == "antes":
+            if not horario < apt_referencia.inicio:
+                raise ValueError(
+                    "O início deve ser anterior ao início do apontamento de referência."
+                )
+
+            anterior = self._repo.buscar_por_fim(apt_referencia.inicio)
+            if anterior and horario < anterior.inicio:
+                raise ValueError("Horário conflita com o apontamento anterior a ele.")
+            if anterior:
+                self._repo.ajustar_fim(anterior.id, horario, ignorar_sobreposicao=True)
+
+            novo = self._repo.registrar_retroativo(
+                projeto=projeto,
+                tarefa=tarefa,
+                inicio=horario,
+                fim=apt_referencia.inicio,
+                nota=nota,
+            )
+
+        elif posicao == "depois":
+            if apt_referencia.fim is None:
+                raise ApontamentoError("Finalize o apontamento para adicionar depois dele.")
+            if not horario > apt_referencia.fim:
+                raise ValueError("O fim deve ser posterior ao fim do apontamento de referência.")
+
+            proximo = self._repo.buscar_por_inicio(apt_referencia.fim)
+            if proximo and proximo.fim is not None and horario > proximo.fim:
+                raise ValueError("Horário conflita com o apontamento seguinte a ele.")
+            if proximo:
+                self._repo.ajustar_inicio(proximo.id, horario, ignorar_sobreposicao=True)
+
+            novo = self._repo.registrar_retroativo(
+                projeto=projeto,
+                tarefa=tarefa,
+                inicio=apt_referencia.fim,
+                fim=horario,
+                nota=nota,
+            )
+
+        else:
+            raise ValueError(f"Posição inválida: {posicao!r}")
+
+        logger.info(f"➕ [Service] Inserido {posicao} de id={apt_referencia.id}: novo id={novo.id}")
+        return novo
+
     def atualizar_projeto_tarefa(self, apontamento_id: int, projeto: str, tarefa: str):
         return self._repo.atualizar_projeto_tarefa(apontamento_id, projeto, tarefa)
 

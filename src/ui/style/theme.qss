@@ -542,6 +542,40 @@ QCheckBox::indicator:checked {
     border-color: #5fb3b3;
 }
 
+/* ── QRadioButton ─────────────────────────────────────────────────────────── */
+
+QRadioButton {
+    color: #a6acb9;
+    font-size: 13px;
+    spacing: 6px;
+}
+
+QRadioButton::indicator {
+    width: 14px;
+    height: 14px;
+    border: 1px solid #4a5360;
+    border-radius: 7px;
+    background: #242b31;
+}
+
+QRadioButton::indicator:hover {
+    border-color: #5fb3b3;
+}
+
+QRadioButton::indicator:checked {
+    background: #5fb3b3;
+    border-color: #5fb3b3;
+}
+
+QRadioButton:disabled {
+    color: #637281;
+}
+
+QRadioButton::indicator:disabled {
+    background: #2a3038;
+    border-color: #3a4350;
+}
+
 /* ── QGroupBox ────────────────────────────────────────────────────────────── */
 
 QGroupBox {

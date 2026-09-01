@@ -182,6 +182,21 @@ class _BotoesAcao(QWidget):
     </svg>
     """
 
+    SVG_ADICIONAR = """
+        <svg xmlns="http://www.w3.org/2000/svg"
+             width="24" height="24"
+             viewBox="0 0 24 24"
+             fill="none"
+             stroke="#E8EAF0"
+             stroke-width="1.8"
+             stroke-linecap="round"
+             stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"/>
+            <line x1="12" y1="8" x2="12" y2="16"/>
+            <line x1="8" y1="12" x2="16" y2="12"/>
+        </svg>
+        """
+
     SVG_LIXEIRA = """
     <svg xmlns="http://www.w3.org/2000/svg"
          width="24" height="24"
@@ -246,6 +261,10 @@ class _BotoesAcao(QWidget):
 
         self._btn_dividir = self._btn(self._icon(self.SVG_DIVIDIR), "Dividir apontamento")
 
+        self._btn_adicionar = self._btn(
+            self._icon(self.SVG_ADICIONAR), "Adicionar apontamento antes/depois"
+        )
+
         self._btn_deletar = self._btn(
             self._icon(self.SVG_LIXEIRA), "Deletar apontamento", object_name="btnDel"
         )
@@ -253,6 +272,7 @@ class _BotoesAcao(QWidget):
         layout.addWidget(self._btn_editar)
         layout.addWidget(self._btn_ajustar)
         layout.addWidget(self._btn_dividir)
+        layout.addWidget(self._btn_adicionar)
         layout.addWidget(self._btn_deletar)
 
         layout.addStretch()
@@ -274,6 +294,7 @@ class _BotoesAcao(QWidget):
         self._btn_editar.clicked.connect(self._on_editar)
         self._btn_ajustar.clicked.connect(self._on_ajustar)
         self._btn_dividir.clicked.connect(self._on_dividir)
+        self._btn_adicionar.clicked.connect(self._on_adicionar)
         self._btn_deletar.clicked.connect(self._on_deletar)
 
     # ------------------------------------------------------------------
@@ -343,6 +364,14 @@ class _BotoesAcao(QWidget):
 
         except ValueError as e:
             QMessageBox.warning(self._dialog, "Erro", str(e))
+
+    def _on_adicionar(self):
+        from src.ui.dialogs.adicionar_dialog import AdicionarApontamentoDialog
+
+        dlg = AdicionarApontamentoDialog(self._apt, self._dialog._svc, parent=self._dialog)
+
+        if dlg.exec() == AdicionarApontamentoDialog.DialogCode.Accepted:
+            self._dialog.recarregar()
 
     def _on_deletar(self):
         resp = QMessageBox.question(
@@ -438,7 +467,7 @@ class HistoricoDialog(QDialog):
         # Larguras iniciais — usuário pode redimensionar livremente
         self._tabela.setColumnWidth(COL_PROJETO, 280)
         self._tabela.setColumnWidth(COL_TAREFA, 320)
-        self._tabela.setColumnWidth(COL_ACOES, 160)
+        self._tabela.setColumnWidth(COL_ACOES, 200)
         hh.setMinimumSectionSize(60)
         hh.setStretchLastSection(False)
 

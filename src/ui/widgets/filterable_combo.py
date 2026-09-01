@@ -109,7 +109,12 @@ class _DropdownPopup(QFrame):
         altura_item = fm.height() + 14  # 14 = padding vertical do QSS (7px topo + 7px base)
         n = min(len(itens), 8) if itens else 1
         espacamento = self._vbox.spacing() * max(n - 1, 0)
-        self._scroll.setFixedHeight(n * altura_item + espacamento + 8)
+        altura_scroll = n * altura_item + espacamento + 8
+        self._scroll.setFixedHeight(altura_scroll)
+        margens = self.layout().contentsMargins()
+        self.setFixedHeight(
+            altura_scroll + margens.top() + margens.bottom() + 2
+        )  # +2 = borda do QFrame (1px topo + 1px base)
 
         # Largura do item mais longo (+ padding horizontal do QSS + margens do popup)
         maior_texto = max((fm.horizontalAdvance(v) for v in itens), default=0)

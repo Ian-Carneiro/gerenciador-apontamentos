@@ -147,6 +147,63 @@ Um apontamento com `fim IS NULL` indica sessão em execução. No máximo um por
 
 ---
 
+## Cenários de Apontamentos
+
+A tela principal tem os campos **Projeto**, **Tarefa**, **Nota**, **Início** e **Fim**, e um botão que alterna entre **"Iniciar / Registrar"** (sem tarefa em execução) e **"Trocar Tarefa"** (com tarefa em execução), além do botão **"Parar Apontamento"**.
+
+### 1. Iniciar agora
+Sem apontamento em execução. Preencha Projeto e Tarefa, deixe Início e Fim em branco, clique em **Iniciar / Registrar**.
+→ A barra de status passa a exibir "● Em execução · ERP › Dev · 00:00:01" e o botão vira "Trocar Tarefa".
+
+### 2. Iniciar em horário específico
+Sem apontamento em execução. Preencha Projeto e Tarefa, informe só o **Início** (ex.: 08:30) e deixe o Fim em branco. Clique em **Iniciar / Registrar**.
+→ A sessão passa a rodar desde as 08:30, como se você tivesse iniciado naquele horário.
+
+### 3. Retroativo completo
+Sem apontamento em execução. Preencha Projeto, Tarefa, **Início** e **Fim** (ex.: 10:00–10:30). Clique em **Iniciar / Registrar**.
+→ Toast "📝 Registrado: 0h 30min". Nada fica em execução — os campos são limpos e o botão permanece "Iniciar / Registrar".
+
+### 4. Retroativo com tarefa ativa
+Já existe uma tarefa em execução (ex.: "Dev" desde as 09:00). Preencha o Projeto/Tarefa da nova atividade e **Início/Fim** do intervalo (ex.: 10:00–10:30). Clique em **Trocar Tarefa**.
+→ "Dev" é interrompida às 10:00, o intervalo é registrado como a nova atividade, e a barra de status volta a mostrar "Dev" em execução, como se ela nunca tivesse parado.
+
+### 5. Troca de tarefa (agora)
+Já existe uma tarefa em execução. Selecione o novo Projeto/Tarefa, deixe Início e Fim em branco. Clique em **Trocar Tarefa**.
+→ Toast "⏹ Dev parado (1h 30min) / ▶️ Testes iniciado". A barra de status atualiza para a nova tarefa em execução.
+
+### 6. Troca de tarefa em horário específico
+Já existe uma tarefa em execução. Selecione o novo Projeto/Tarefa e informe só o **Início** (ex.: 11:00), com Fim em branco. Clique em **Trocar Tarefa**.
+→ A tarefa anterior encerra às 11:00 e a nova passa a rodar a partir desse horário.
+
+### Parar apontamento ativo
+Com uma tarefa em execução, opcionalmente informe o **Fim** (senão usa o horário atual) e/ou uma **Nota**. Clique em **Parar Apontamento**.
+→ Toast "Parado: ERP › Dev (2h 15min)". O botão "Parar Apontamento" é desabilitado e o principal volta a exibir "Iniciar / Registrar".
+
+> Preencher só o **Fim** sem o **Início** é bloqueado com o aviso "Preencha também o Início quando informar o Fim". Um intervalo que conflita com um apontamento já existente é rejeitado com o horário e a tarefa em conflito, sugerindo consultar **Visualizar → Intervalos Livres Hoje**.
+
+---
+
+## Edição no Histórico
+
+Acesse em **Visualizar → Histórico de Apontamentos** (`Ctrl+H`). A tabela agrupa os apontamentos por dia, com o total de horas ao final de cada bloco, e cada linha tem 4 ícones de ação: **✏️ Editar**, **⏱ Ajustar horário**, **✂️ Dividir** e **🗑️ Deletar**.
+
+### ✏️ Editar projeto/tarefa/nota
+Abre um diálogo com Projeto, Tarefa e Nota pré-preenchidos; os horários aparecem só como referência (somente leitura). Altere o que quiser e clique em **Salvar**.
+
+### ⏱ Ajustar horário
+Abre um diálogo com o Início atual (e o Fim atual, se o apontamento já estiver encerrado) e um campo ao lado para o novo valor de cada um — preencha só o que quiser mudar. A duração resultante é recalculada em tempo real conforme você digita.
+- Se for o apontamento mais recente do dia e ainda tiver Fim, aparece a opção **"Remover fim (reabrir apontamento)"**, que volta a deixá-lo em execução.
+- Mudar o Início ou o Fim desloca automaticamente o apontamento vizinho (o anterior ou o seguinte), mantendo a sequência do dia sem buracos nem sobreposição.
+- Um novo horário que colida com outro apontamento já existente é rejeitado, mostrando projeto, tarefa e horário do conflito.
+
+### ✂️ Dividir apontamento
+Só fica habilitado para apontamentos já finalizados — em uma tarefa ainda em execução, o ícone aparece desabilitado com o aviso "Finalize o apontamento para dividir". Informe o **horário de corte** e o diálogo mostra em tempo real como ficam a Parte 1 e a Parte 2 (mesmo projeto/tarefa, cada uma com seu próprio intervalo e duração). Clique em **Dividir** para confirmar.
+
+### 🗑️ Deletar
+Pede confirmação mostrando projeto, tarefa e horário do apontamento, avisando que a ação não pode ser desfeita.
+
+---
+
 ## Automação
 
 ### NetProject
@@ -206,7 +263,3 @@ pytest tests/
 Para testes que envolvem banco de dados, use `reset_engine_for_tests(db_path)` disponível em `src/db/database.py` para apontar o engine para um banco temporário.
 
 ---
-
-## Versão
-
-`4.3.0` — definida em `config.py`. A versão exibida na aplicação Qt é `5.0.0` (definida em `main.py`).

@@ -91,3 +91,4 @@ class HoraField(QWidget):
             self.edit.blockSignals(True)
             self.edit.setText(formatado)
             self.edit.blockSignals(False)
+            self.edit.textChanged.emit(formatado)
