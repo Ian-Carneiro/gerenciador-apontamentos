@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 confirmacao_dialogs.py — Diálogos de confirmação de envio para automações.
 
@@ -9,16 +8,23 @@ Funções:
 Para diálogos genéricos de entrada de dados (pedir_data, selecionar_recurso),
 use src.ui.dialogs.utils_dialogs.
 """
-from typing import Dict, List, Optional
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-    QDialog, QHBoxLayout, QLabel, QPushButton,
-    QTableWidget, QTableWidgetItem, QHeaderView, QVBoxLayout, QWidget,
+    QDialog,
+    QHBoxLayout,
+    QHeaderView,
+    QLabel,
+    QPushButton,
+    QTableWidget,
+    QTableWidgetItem,
+    QVBoxLayout,
+    QWidget,
 )
 
+
 def confirmar_apontamentos_netproject(
-    apontamentos: List[Dict], data_str: str, parent: Optional[QWidget] = None
+    apontamentos: list[dict], data_str: str, parent: QWidget | None = None
 ) -> bool:
     """Exibe diálogo de confirmação visual para apontamentos NetProject"""
     dlg = QDialog(parent)
@@ -40,8 +46,12 @@ def confirmar_apontamentos_netproject(
 
     for row, apt in enumerate(apontamentos):
         hora_fim = apt["hora_fim"] or "Em andamento"
-        horas = f"{apt['horas_trabalhadas']:.2f}h" if apt.get("horas_trabalhadas") else "Em andamento"
-        for col, valor in enumerate([apt["projeto"], apt["tarefa"], apt["hora_inicio"], hora_fim, horas]):
+        horas = (
+            f"{apt['horas_trabalhadas']:.2f}h" if apt.get("horas_trabalhadas") else "Em andamento"
+        )
+        for col, valor in enumerate(
+            [apt["projeto"], apt["tarefa"], apt["hora_inicio"], hora_fim, horas]
+        ):
             tabela.setItem(row, col, QTableWidgetItem(str(valor)))
 
     layout.addWidget(tabela)
@@ -58,7 +68,7 @@ def confirmar_apontamentos_netproject(
 
 
 def confirmar_horarios_sgiweb(
-    horarios: List[str], data_str: str, parent: Optional[QWidget] = None
+    horarios: list[str], data_str: str, parent: QWidget | None = None
 ) -> bool:
     """Exibe diálogo de confirmação visual para horários SGIWeb"""
     dlg = QDialog(parent)

@@ -1,10 +1,9 @@
-# -*- coding: utf-8 -*-
 """Gerenciador de Projetos e Tarefas - Com messageboxes"""
+
 import os
-import xml.etree.ElementTree as ET
 from pathlib import Path
-from typing import List, Dict, Optional
-from datetime import datetime
+import xml.etree.ElementTree as ET
+
 import requests
 
 import config
@@ -23,8 +22,7 @@ class ProjetosTarefasHandler:
         self.dir_xmls = config.DATA_DIR / "xmls"
         os.makedirs(self.dir_xmls, exist_ok=True)
 
-
-    def atualizar_projetos_tarefas(self, recurso: str, forcar_download: bool = False) -> List[Dict]:
+    def atualizar_projetos_tarefas(self, recurso: str, forcar_download: bool = False) -> list[dict]:
         """
         Baixa XMLs do NetProject, extrai tarefas do recurso e retorna os
         dados já prontos para ApontamentoRepository.sincronizar_projetos_tarefas().
@@ -36,7 +34,7 @@ class ProjetosTarefasHandler:
             logger.info(f"🔍 Processando tarefas para recurso: {recurso}")
             todas_tarefas = []
 
-            for nome_proj, codigo in config_netproject.projetos_netproject.items():
+            for nome_proj, _codigo in config_netproject.projetos_netproject.items():
                 xml_path = self.dir_xmls / f"{nome_proj}.xml"
                 if not xml_path.exists():
                     logger.warning(f"⚠️ XML não encontrado: {xml_path}")
@@ -59,19 +57,21 @@ class ProjetosTarefasHandler:
             logger.error(f"❌ Erro na atualização: {e}", exc_info=True)
             return []
 
-    def _aplicar_de_para(self, tarefas: List[Dict]) -> List[Dict]:
+    def _aplicar_de_para(self, tarefas: list[dict]) -> list[dict]:
         """Aplica de/para e mapeia para o formato esperado pelo repository"""
         dados = []
         for t in tarefas:
-            dados.append({
-                "projeto": config_netproject.aplicar_projeto(t["project"]),
-                "tarefa": config_netproject.aplicar_tarefa(t["tarefa"]),
-                "ativo": t["ativo"] not in ("0", "", None),
-                "start": t["start"],
-                "finish": t["finish"],
-                "percent_complete": t["percent_complete"],
-                "notes": (t["notes"] or "").replace("\n", " ").strip(),
-            })
+            dados.append(
+                {
+                    "projeto": config_netproject.aplicar_projeto(t["project"]),
+                    "tarefa": config_netproject.aplicar_tarefa(t["tarefa"]),
+                    "ativo": t["ativo"] not in ("0", "", None),
+                    "start": t["start"],
+                    "finish": t["finish"],
+                    "percent_complete": t["percent_complete"],
+                    "notes": (t["notes"] or "").replace("\n", " ").strip(),
+                }
+            )
         return dados
 
     def _baixar_xmls(self, forcar: bool = False):
@@ -96,10 +96,10 @@ class ProjetosTarefasHandler:
                 logger.info(f"✅ {nome_proj}.xml salvo")
             except requests.RequestException as e:
                 logger.error(f"❌ Erro ao baixar {nome_proj}: {e}")
-            except IOError as e:
+            except OSError as e:
                 logger.error(f"❌ Erro ao salvar {nome_proj}.xml: {e}")
 
-    def _extrair_tarefas_recurso(self, xml_path: Path, recurso: str) -> List[Dict]:
+    def _extrair_tarefas_recurso(self, xml_path: Path, recurso: str) -> list[dict]:
         """Extrai tarefas atribuídas a um recurso específico"""
         ns = {"ns": "http://schemas.microsoft.com/project"}
 
@@ -192,11 +192,6 @@ class ProjetosTarefasHandler:
                 atribuida = uid in assigned_task_uids
                 concluida = t["percent_complete"].isdigit() and int(t["percent_complete"]) == 100
 
-                try:
-                    finalizou = datetime.strptime(t['finish'], "%Y-%m-%dT%H:%M:%S") < datetime.now()
-                except ValueError:
-                    finalizou = False
-
                 if atribuida and not concluida:
                     tarefas_validas.append(t)
 
@@ -208,7 +203,7 @@ class ProjetosTarefasHandler:
             logger.error(f"❌ Erro ao processar {xml_path.name}: {e}")
             return []
 
-    def obter_recursos_disponiveis(self) -> List[str]:
+    def obter_recursos_disponiveis(self) -> list[str]:
         """Retorna lista de recursos do primeiro XML disponível"""
         xmls = list(self.dir_xmls.glob("*.xml"))
 

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Testes unitários — ApontamentoService (Fase 2)
 Roda com banco SQLite em memória, sem UI, sem PySide6.
@@ -6,30 +5,29 @@ Roda com banco SQLite em memória, sem UI, sem PySide6.
     cd apontador_v5
     pytest tests/test_service.py -v
 """
-import pytest
-from datetime import datetime, date, timedelta
+
+from datetime import date, datetime, timedelta
 from pathlib import Path
 import sys
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from src.core.apontamento_service import (
+    ApontamentoService,
+    ItemFavorito,
+)
 from src.db.database import init_db, reset_engine_for_tests
 from src.db.repository import (
-    ApontamentoRepository,
-    ApontamentoAtivoError,
     ApontamentoError,
+    ApontamentoRepository,
     HorarioInvalidoError,
     SobreposicaoError,
 )
-from src.core.apontamento_service import (
-    ApontamentoService,
-    EstadoApp,
-    ItemFavorito,
-    ResultadoIniciar,
-)
-
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
+
 
 @pytest.fixture(autouse=True)
 def banco_em_memoria(tmp_path):
@@ -50,8 +48,8 @@ def svc(repo):
 
 
 _HOJE = date.today()
-_ANO  = _HOJE.year
-_MES  = _HOJE.month
+_ANO = _HOJE.year
+_MES = _HOJE.month
 
 
 def dt(
@@ -81,8 +79,8 @@ def dia_n(n: int) -> int:
 
 # ── ResultadoIniciar.mensagem ─────────────────────────────────────────────────
 
-class TestResultadoIniciarMensagem:
 
+class TestResultadoIniciarMensagem:
     def test_mensagem_iniciado(self, svc):
         res = svc.iniciar_ou_registrar("P", "T", agora=dt(9))
         assert "Iniciado" in res.mensagem or "▶️" in res.mensagem
@@ -100,8 +98,8 @@ class TestResultadoIniciarMensagem:
 
 # ── Cenário 1: Iniciar agora ──────────────────────────────────────────────────
 
-class TestCenario1IniciarAgora:
 
+class TestCenario1IniciarAgora:
     def test_inicio_sem_horario_usa_agora(self, svc):
         agora = dt(9)
         res = svc.iniciar_ou_registrar("Proj", "Tar", agora=agora)
@@ -114,14 +112,14 @@ class TestCenario1IniciarAgora:
         assert svc.obter_ativo() is not None
 
     def test_inicio_sem_horario_sem_projeto_falha(self, svc):
-        with pytest.raises(Exception):
+        with pytest.raises(ValueError):
             svc.iniciar_ou_registrar("", "Tar", agora=dt(9))
 
 
 # ── Cenário 2: Iniciar em horário específico ──────────────────────────────────
 
-class TestCenario2IniciarHorario:
 
+class TestCenario2IniciarHorario:
     def test_inicio_com_horario_especifico(self, svc):
         res = svc.iniciar_ou_registrar("Proj", "Tar", inicio=dt(9), agora=dt(10))
         assert res.apontamento.inicio == dt(9)
@@ -136,8 +134,8 @@ class TestCenario2IniciarHorario:
 
 # ── Cenário 3: Retroativo completo ───────────────────────────────────────────
 
-class TestCenario3Retroativo:
 
+class TestCenario3Retroativo:
     def test_retroativo_cria_finalizado(self, svc):
         res = svc.iniciar_ou_registrar("Proj", "Tar", inicio=dt(9), fim=dt(11))
         assert res.modo == "retroativo"
@@ -149,9 +147,7 @@ class TestCenario3Retroativo:
         assert svc.obter_ativo() is None
 
     def test_retroativo_preserva_nota(self, svc):
-        res = svc.iniciar_ou_registrar(
-            "Proj", "Tar", inicio=dt(9), fim=dt(11), nota="minha nota"
-        )
+        res = svc.iniciar_ou_registrar("Proj", "Tar", inicio=dt(9), fim=dt(11), nota="minha nota")
         assert res.apontamento.nota == "minha nota"
 
     def test_retroativo_fim_antes_inicio_falha(self, svc):
@@ -167,14 +163,14 @@ class TestCenario3Retroativo:
 
     def test_retroativo_em_intervalo_livre(self, svc):
         """Caso solicitado: inserir entre dois apontamentos já existentes."""
-        svc.iniciar_ou_registrar("P", "T1", inicio=dt(9),  fim=dt(10))
+        svc.iniciar_ou_registrar("P", "T1", inicio=dt(9), fim=dt(10))
         svc.iniciar_ou_registrar("P", "T2", inicio=dt(11), fim=dt(12))
         # Buraco 10h–11h: deve funcionar
         res = svc.iniciar_ou_registrar("P", "T3", inicio=dt(10), fim=dt(11))
         assert res.apontamento.horas == pytest.approx(1.0)
 
     def test_multiplos_retroativos_mesmo_dia(self, svc):
-        svc.iniciar_ou_registrar("P", "T1", inicio=dt(9),  fim=dt(10))
+        svc.iniciar_ou_registrar("P", "T1", inicio=dt(9), fim=dt(10))
         svc.iniciar_ou_registrar("P", "T2", inicio=dt(10), fim=dt(11))
         svc.iniciar_ou_registrar("P", "T3", inicio=dt(11), fim=dt(12))
         total = svc._repo.total_horas_dia(hoje())
@@ -183,8 +179,8 @@ class TestCenario3Retroativo:
 
 # ── Cenário 5: Troca de tarefa ────────────────────────────────────────────────
 
-class TestCenario5TrocaTarefa:
 
+class TestCenario5TrocaTarefa:
     def test_troca_para_atual_e_inicia_nova(self, svc):
         svc.iniciar_ou_registrar("Proj", "T1", agora=dt(9))
         res = svc.iniciar_ou_registrar("Proj", "T2", agora=dt(10))
@@ -224,16 +220,14 @@ class TestCenario5TrocaTarefa:
         assert ativo.tarefa == "T5"
         # As 4 anteriores devem estar finalizadas
         blocos = svc._repo.obter_blocos_historico()
-        finalizados = [
-            a for b in blocos for a in b.apontamentos if a.fim is not None
-        ]
+        finalizados = [a for b in blocos for a in b.apontamentos if a.fim is not None]
         assert len(finalizados) == 4
 
 
 # ── Parar ativo ───────────────────────────────────────────────────────────────
 
-class TestPararAtivo:
 
+class TestPararAtivo:
     def test_parar_com_horario(self, svc):
         svc.iniciar_ou_registrar("P", "T", agora=dt(9))
         parado = svc.parar_ativo(fim=dt(11))
@@ -258,16 +252,18 @@ class TestPararAtivo:
 
 # ── Recuperar estado ──────────────────────────────────────────────────────────
 
-class TestRecuperarEstado:
 
+class TestRecuperarEstado:
     def test_estado_inicial_vazio(self, svc):
         # Monkey-patch date.today para retornar dia fixo
         import src.core.apontamento_service as svc_mod
+
         orig = svc_mod.date
 
         class FakeDate(date):
             @classmethod
-            def today(cls): return hoje()
+            def today(cls):
+                return hoje()
 
         svc_mod.date = FakeDate
         try:
@@ -283,11 +279,13 @@ class TestRecuperarEstado:
         apt = repo.iniciar("P", "T", dt(9))
 
         import src.core.apontamento_service as svc_mod
+
         orig = svc_mod.date
 
         class FakeDate(date):
             @classmethod
-            def today(cls): return hoje()
+            def today(cls):
+                return hoje()
 
         svc_mod.date = FakeDate
         try:
@@ -302,11 +300,13 @@ class TestRecuperarEstado:
         repo.registrar_retroativo("P", "T2", dt(10, 30), dt(12))
 
         import src.core.apontamento_service as svc_mod
+
         orig = svc_mod.date
 
         class FakeDate(date):
             @classmethod
-            def today(cls): return hoje()
+            def today(cls):
+                return hoje()
 
         svc_mod.date = FakeDate
         try:
@@ -319,8 +319,8 @@ class TestRecuperarEstado:
 
 # ── Favoritos ─────────────────────────────────────────────────────────────────
 
-class TestFavoritos:
 
+class TestFavoritos:
     def test_sem_historico_retorna_vazio(self, svc):
         favoritos = svc.calcular_favoritos()
         assert favoritos == []
@@ -382,8 +382,8 @@ class TestFavoritos:
 
 # ── Intervalos livres ─────────────────────────────────────────────────────────
 
-class TestIntervalosLivres:
 
+class TestIntervalosLivres:
     def test_dia_vazio_retorna_dia_inteiro(self, svc):
         livres = svc.obter_intervalos_livres(hoje())
         assert len(livres) == 1
@@ -394,26 +394,26 @@ class TestIntervalosLivres:
         repo.registrar_retroativo("P", "T2", dt(11), dt(12))
         livres = svc.obter_intervalos_livres(hoje())
         # Deve incluir o buraco 10h–11h
-        buracos_inicio = [l[0].hour for l in livres]
+        buracos_inicio = [iv[0].hour for iv in livres]
         assert 10 in buracos_inicio
 
     def test_sem_buraco_entre_adjacentes(self, svc, repo):
-        repo.registrar_retroativo("P", "T1", dt(9),  dt(10))
+        repo.registrar_retroativo("P", "T1", dt(9), dt(10))
         repo.registrar_retroativo("P", "T2", dt(10), dt(11))
         livres = svc.obter_intervalos_livres(hoje())
         # Não deve ter buraco entre 10h e 10h
-        buracos_inicio = [l[0].hour for l in livres]
+        buracos_inicio = [iv[0].hour for iv in livres]
         assert 10 not in buracos_inicio
 
 
 # ── Delegações ao Repository ──────────────────────────────────────────────────
 
-class TestDelegacoes:
 
+class TestDelegacoes:
     def test_dividir_via_service(self, svc, repo):
         apt = repo.registrar_retroativo("P", "T", dt(9), dt(12))
         p1, p2 = svc.dividir(apt.id, dt(10, 30))
-        assert p1.fim   == dt(10, 30)
+        assert p1.fim == dt(10, 30)
         assert p2.inicio == dt(10, 30)
 
     def test_atualizar_projeto_tarefa_via_service(self, svc, repo):
@@ -455,10 +455,12 @@ class TestDelegacoes:
         assert atualizado.nota == "nova nota"
 
     def test_listar_projetos_tarefas_via_service(self, svc, repo):
-        repo.sincronizar_projetos_tarefas([
-            {"projeto": "P1", "tarefa": "T1", "ativo": True},
-            {"projeto": "P2", "tarefa": "T2", "ativo": False},
-        ])
+        repo.sincronizar_projetos_tarefas(
+            [
+                {"projeto": "P1", "tarefa": "T1", "ativo": True},
+                {"projeto": "P2", "tarefa": "T2", "ativo": False},
+            ]
+        )
         ativos = svc.listar_projetos_tarefas()
         assert len(ativos) == 1
         assert ativos[0].projeto == "P1"
@@ -471,6 +473,7 @@ class TestDelegacoes:
 
 
 # ── slide_adjacentes ──────────────────────────────────────────────────────────
+
 
 class TestSlideAdjacentes:
     """Regras de ApontamentoService.slide_adjacentes."""
@@ -528,6 +531,7 @@ class TestSlideAdjacentes:
 
 # ── Fluxo AjustarHorarioDialog (regressão) ──────────────────────────────────
 
+
 class TestFluxoAjusteHorarioComVizinho:
     """
     Reproduz slide_adjacentes() + ajustar_inicio()/ajustar_fim() como o
@@ -582,8 +586,8 @@ class TestFluxoAjusteHorarioComVizinho:
 
 # ── Fluxo completo dia de trabalho ────────────────────────────────────────────
 
-class TestFluxoCompleto:
 
+class TestFluxoCompleto:
     def test_dia_completo_com_trocas_e_retroativo(self, svc, repo):
         """
         Simula um dia real:
@@ -619,16 +623,18 @@ class TestFluxoCompleto:
         """
         09–10h e 11–12h registrados. Usuário lembra que fez algo 10–11h.
         """
-        svc.iniciar_ou_registrar("P", "T1", inicio=dt(9),  fim=dt(10))
+        svc.iniciar_ou_registrar("P", "T1", inicio=dt(9), fim=dt(10))
         svc.iniciar_ou_registrar("P", "T2", inicio=dt(11), fim=dt(12))
 
         livres = svc.obter_intervalos_livres(hoje())
-        buraco = next((l for l in livres if l[0].hour == 10), None)
+        buraco = next((iv for iv in livres if iv[0].hour == 10), None)
         assert buraco is not None
 
         svc.iniciar_ou_registrar(
-            "P", "T_esquecida",
-            inicio=buraco[0], fim=buraco[1],
+            "P",
+            "T_esquecida",
+            inicio=buraco[0],
+            fim=buraco[1],
         )
         total = repo.total_horas_dia(hoje())
         assert total == pytest.approx(3.0)

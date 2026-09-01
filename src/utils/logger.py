@@ -1,8 +1,9 @@
 import logging
+from logging.handlers import RotatingFileHandler
 import os
 from pathlib import Path
 import sys
-from logging.handlers import RotatingFileHandler
+from typing import ClassVar
 
 # Obtém o diretório do executável ou script
 if getattr(sys, "frozen", False):
@@ -27,14 +28,14 @@ DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 # --- Configuração de cores no console ---
 class ColorFormatter(logging.Formatter):
-    COLORS = {
-        "DEBUG": "\033[94m",  # Azul
-        "INFO": "\033[92m",  # Verde
-        "WARNING": "\033[93m",  # Amarelo
-        "ERROR": "\033[91m",  # Vermelho
-        "CRITICAL": "\033[95m",  # Magenta
+    COLORS: ClassVar[dict[str, str]] = {
+        "DEBUG": "\033[94m",
+        "INFO": "\033[92m",
+        "WARNING": "\033[93m",
+        "ERROR": "\033[91m",
+        "CRITICAL": "\033[95m",
     }
-    RESET = "\033[0m"
+    RESET: ClassVar[str] = "\033[0m"
 
     def format(self, record):
         color = self.COLORS.get(record.levelname, "")
@@ -50,7 +51,7 @@ console_handler.setFormatter(ColorFormatter(LOG_FORMAT, DATE_FORMAT))
 file_handler = RotatingFileHandler(
     LOG_FILE,
     maxBytes=1_000_000,  # 1 MB
-    backupCount=10  # mantém 10 versões
+    backupCount=10,  # mantém 10 versões
 )
 file_handler.setFormatter(logging.Formatter(LOG_FORMAT, DATE_FORMAT))
 

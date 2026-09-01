@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 workers.py — QThread workers da camada de UI.
 
@@ -6,6 +5,7 @@ Classes:
     AtualizarProjetosWorker  — baixa e processa projetos/tarefas do NetProject
                                em background, emitindo concluido ou erro.
 """
+
 from __future__ import annotations
 
 from PySide6.QtCore import QThread, Signal
@@ -27,7 +27,7 @@ class AtualizarProjetosWorker(QThread):
     """
 
     concluido = Signal(list)
-    erro      = Signal(str)
+    erro = Signal(str)
 
     def __init__(self, handler, recurso: str, parent=None):
         super().__init__(parent)
@@ -36,9 +36,7 @@ class AtualizarProjetosWorker(QThread):
 
     def run(self):
         try:
-            dados = self._handler.atualizar_projetos_tarefas(
-                self._recurso, forcar_download=True
-            )
+            dados = self._handler.atualizar_projetos_tarefas(self._recurso, forcar_download=True)
             self.concluido.emit(dados)
         except Exception as e:
             self.erro.emit(str(e))

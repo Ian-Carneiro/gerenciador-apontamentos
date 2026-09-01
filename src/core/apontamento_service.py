@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 ApontamentoService — Regras de negócio de alto nível.
 
@@ -12,20 +11,18 @@ Responsabilidades:
   - Score de favoritos / mais usados
   - Formatação de dados para a UI (nada de widgets aqui)
 """
+
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from datetime import datetime, date, timedelta
-from typing import Optional
+from dataclasses import dataclass
+from datetime import date, datetime, timedelta
 
 from src.db.models import Apontamento, ProjetoTarefa
 from src.db.repository import (
-    ApontamentoRepository,
     ApontamentoAtivoError,
     ApontamentoError,
+    ApontamentoRepository,
     BlocoHistorico,
-    HorarioInvalidoError,
-    SobreposicaoError,
 )
 from src.utils.logger import get_logger
 
@@ -34,12 +31,14 @@ logger = get_logger(__name__)
 
 # ── DTOs de resultado ─────────────────────────────────────────────────────────
 
+
 @dataclass
 class ResultadoIniciar:
     """Retorno de iniciar_ou_registrar() com contexto para a UI."""
+
     apontamento: Apontamento
-    anterior_parado: Optional[Apontamento] = None   # se houve troca de tarefa
-    modo: str = "iniciado"                          # "iniciado" | "retroativo" | "troca"
+    anterior_parado: Apontamento | None = None  # se houve troca de tarefa
+    modo: str = "iniciado"  # "iniciado" | "retroativo" | "troca"
 
     @property
     def mensagem(self) -> str:
@@ -57,12 +56,13 @@ class ResultadoIniciar:
 @dataclass
 class ItemFavorito:
     """Projeto/tarefa com score de relevância para exibição no menu de favoritos."""
+
     projeto: str
-    tarefa:  str
-    score:   float
-    contagem:    int   = 0
+    tarefa: str
+    score: float
+    contagem: int = 0
     total_horas: float = 0.0
-    ultima_vez:  Optional[datetime] = None
+    ultima_vez: datetime | None = None
 
     @property
     def label(self) -> str:
@@ -78,10 +78,11 @@ class ItemFavorito:
 @dataclass
 class EstadoApp:
     """Snapshot do estado atual para a UI reconstruir a tela."""
-    ativo: Optional[Apontamento]
+
+    ativo: Apontamento | None
     blocos_hoje: list[Apontamento]
     total_horas_hoje: float
-    projetos_tarefas: list[dict]   # [{"projeto": ..., "tarefa": ...}]
+    projetos_tarefas: list[dict]  # [{"projeto": ..., "tarefa": ...}]
 
     @property
     def em_execucao(self) -> bool:
@@ -96,13 +97,14 @@ class EstadoApp:
 
 # ── Service ───────────────────────────────────────────────────────────────────
 
+
 class ApontamentoService:
     """
     Ponto de entrada único para toda lógica de negócio.
     Instancie uma vez na aplicação e injete onde necessário.
     """
 
-    def __init__(self, repo: Optional[ApontamentoRepository] = None):
+    def __init__(self, repo: ApontamentoRepository | None = None):
         self._repo = repo or ApontamentoRepository()
 
     # ── Fluxo principal: Iniciar / Registrar ──────────────────────────────────
@@ -110,11 +112,11 @@ class ApontamentoService:
     def iniciar_ou_registrar(
         self,
         projeto: str,
-        tarefa:  str,
-        inicio:  Optional[datetime] = None,
-        fim:     Optional[datetime] = None,
-        nota:    str = "",
-        agora:   Optional[datetime] = None,
+        tarefa: str,
+        inicio: datetime | None = None,
+        fim: datetime | None = None,
+        nota: str = "",
+        agora: datetime | None = None,
     ) -> ResultadoIniciar:
         """
         Implementa os cenários de início e registro:
@@ -165,7 +167,7 @@ class ApontamentoService:
             raise ValueError("Tarefa não pode estar vazia.")
 
         _agora = agora or datetime.now()
-        ativo  = self._repo.obter_ativo()
+        ativo = self._repo.obter_ativo()
 
         # ── Cenários 3 e 4: Retroativo completo ────────────────────────────────
         if inicio is not None and fim is not None:
@@ -175,10 +177,7 @@ class ApontamentoService:
 
                 # 1. Para a tarefa atual no início da nova
                 parado = self._repo.parar(ativo.id, fim=inicio)
-                logger.info(
-                    f"⏹  [Service] Intervalo: parado id={parado.id} "
-                    f"em {inicio}"
-                )
+                logger.info(f"⏹  [Service] Intervalo: parado id={parado.id} em {inicio}")
 
                 # 2. Registra a nova tarefa no intervalo informado
                 novo = self._repo.registrar_retroativo(
@@ -188,9 +187,7 @@ class ApontamentoService:
                     fim=fim,
                     nota=nota,
                 )
-                logger.info(
-                    f"📝 [Service] Intervalo: registrado id={novo.id}"
-                )
+                logger.info(f"📝 [Service] Intervalo: registrado id={novo.id}")
 
                 # 3. Continua a tarefa anterior a partir do fim da nova
                 retomado = self._repo.iniciar(
@@ -199,9 +196,7 @@ class ApontamentoService:
                     inicio=fim,
                     nota=ativo.nota,
                 )
-                logger.info(
-                    f"▶️  [Service] Intervalo: retomado id={retomado.id}"
-                )
+                logger.info(f"▶️  [Service] Intervalo: retomado id={retomado.id}")
 
                 return ResultadoIniciar(
                     apontamento=retomado,
@@ -224,8 +219,10 @@ class ApontamentoService:
         if ativo is not None and inicio is None and fim is None:
             return self._trocar_tarefa(
                 ativo=ativo,
-                projeto=projeto, tarefa=tarefa,
-                nota=nota, agora=_agora,
+                projeto=projeto,
+                tarefa=tarefa,
+                nota=nota,
+                agora=_agora,
             )
 
         # ── Cenários 1, 2 e 6: Iniciar ou trocar em horário específico ────────
@@ -234,8 +231,7 @@ class ApontamentoService:
                 # Cenário 6: encerra a tarefa atual e inicia a nova em X.
                 parado = self._repo.parar(ativo.id, fim=inicio)
                 logger.info(
-                    f"⏹  [Service] Troca agendada: parado id={parado.id} "
-                    f"({parado.duracao_str})"
+                    f"⏹  [Service] Troca agendada: parado id={parado.id} ({parado.duracao_str})"
                 )
 
                 novo = self._repo.iniciar(
@@ -259,7 +255,10 @@ class ApontamentoService:
         # Cenários 1 e 2: sem tarefa ativa, inicia agora ou em horário específico.
         _inicio = inicio or _agora
         apt = self._repo.iniciar(
-            projeto=projeto, tarefa=tarefa, inicio=_inicio, nota=nota,
+            projeto=projeto,
+            tarefa=tarefa,
+            inicio=_inicio,
+            nota=nota,
         )
         logger.info(f"▶️  [Service] Iniciado id={apt.id}")
         return ResultadoIniciar(apontamento=apt, modo="iniciado")
@@ -268,9 +267,9 @@ class ApontamentoService:
         self,
         ativo: Apontamento,
         projeto: str,
-        tarefa:  str,
-        nota:    str,
-        agora:   datetime,
+        tarefa: str,
+        nota: str,
+        agora: datetime,
     ) -> ResultadoIniciar:
         """Para o apontamento atual e inicia o novo atomicamente."""
         # Para o ativo
@@ -291,9 +290,9 @@ class ApontamentoService:
 
     def parar_ativo(
         self,
-        fim:  Optional[datetime] = None,
-        nota: Optional[str] = None,
-        agora: Optional[datetime] = None,
+        fim: datetime | None = None,
+        nota: str | None = None,
+        agora: datetime | None = None,
     ) -> Apontamento:
         """
         Para o apontamento em execução.
@@ -302,7 +301,7 @@ class ApontamentoService:
             ApontamentoError: se não há apontamento ativo.
         """
         _agora = agora or datetime.now()
-        ativo  = self._repo.obter_ativo()
+        ativo = self._repo.obter_ativo()
 
         if ativo is None:
             raise ApontamentoError("Nenhum apontamento em execução para parar.")
@@ -324,11 +323,11 @@ class ApontamentoService:
 
         Chamado no bootstrap da MainWindow.
         """
-        hoje   = date.today()
-        ativo  = self._repo.obter_ativo()
-        hoje_apts     = self._repo.obter_por_dia(hoje)
-        total_hoje    = self._repo.total_horas_dia(hoje)
-        proj_tarefas  = self._projetos_tarefas_como_dicts()
+        hoje = date.today()
+        ativo = self._repo.obter_ativo()
+        hoje_apts = self._repo.obter_por_dia(hoje)
+        total_hoje = self._repo.total_horas_dia(hoje)
+        proj_tarefas = self._projetos_tarefas_como_dicts()
 
         logger.info(
             f"🔄 [Service] Estado recuperado: "
@@ -348,8 +347,8 @@ class ApontamentoService:
 
     def calcular_favoritos(
         self,
-        max_itens:       int = 5,
-        dias_historico:  int = 7,
+        max_itens: int = 5,
+        dias_historico: int = 7,
     ) -> list[ItemFavorito]:
         """
         Calcula os projetos/tarefas mais usados nos últimos N dias,
@@ -380,7 +379,7 @@ class ApontamentoService:
                 )
 
             item = agrupado[key]
-            item.contagem    += 1
+            item.contagem += 1
             item.total_horas += apt.horas
 
             if apt.inicio > (item.ultima_vez or datetime.min):
@@ -416,7 +415,7 @@ class ApontamentoService:
     def obter_historico(self, limit_dias: int = 30) -> list[BlocoHistorico]:
         return self._repo.obter_blocos_historico(limit_dias)
 
-    def obter_intervalos_livres(self, dia: Optional[date] = None) -> list[tuple[datetime, datetime]]:
+    def obter_intervalos_livres(self, dia: date | None = None) -> list[tuple[datetime, datetime]]:
         """Intervalos sem apontamento no dia (default: hoje)."""
         return self._repo.obter_intervalos_livres(dia or date.today())
 
@@ -429,11 +428,19 @@ class ApontamentoService:
     def atualizar_projeto_tarefa(self, apontamento_id: int, projeto: str, tarefa: str):
         return self._repo.atualizar_projeto_tarefa(apontamento_id, projeto, tarefa)
 
-    def ajustar_inicio(self, apontamento_id: int, novo_inicio: datetime, ignorar_sobreposicao: bool = False):
-        return self._repo.ajustar_inicio(apontamento_id, novo_inicio, ignorar_sobreposicao=ignorar_sobreposicao)
+    def ajustar_inicio(
+        self, apontamento_id: int, novo_inicio: datetime, ignorar_sobreposicao: bool = False
+    ):
+        return self._repo.ajustar_inicio(
+            apontamento_id, novo_inicio, ignorar_sobreposicao=ignorar_sobreposicao
+        )
 
-    def ajustar_fim(self, apontamento_id: int, novo_fim: datetime, ignorar_sobreposicao: bool = False):
-        return self._repo.ajustar_fim(apontamento_id, novo_fim, ignorar_sobreposicao=ignorar_sobreposicao)
+    def ajustar_fim(
+        self, apontamento_id: int, novo_fim: datetime, ignorar_sobreposicao: bool = False
+    ):
+        return self._repo.ajustar_fim(
+            apontamento_id, novo_fim, ignorar_sobreposicao=ignorar_sobreposicao
+        )
 
     def slide_adjacentes(self, apt: Apontamento, delta_ini=None, delta_fim=None):
         if delta_fim:
@@ -468,7 +475,7 @@ class ApontamentoService:
     def reabrir(self, apontamento_id: int) -> Apontamento:
         return self._repo.reabrir(apontamento_id)
 
-    def obter_ativo(self) -> Optional[Apontamento]:
+    def obter_ativo(self) -> Apontamento | None:
         return self._repo.obter_ativo()
 
     def listar_projetos_tarefas(self) -> list[ProjetoTarefa]:

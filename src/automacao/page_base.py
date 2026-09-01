@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
 """Page Object Model - Classe Base - PLAYWRIGHT"""
+
 from pathlib import Path
 
 from playwright.sync_api import Browser, BrowserContext, Page, Playwright
@@ -30,7 +30,9 @@ class BrowserManager:
         try:
             monitors = get_monitors()
             if len(monitors) > 1:
-                monitor = next((m for m in monitors if not getattr(m, "is_primary", False)), monitors[0])
+                monitor = next(
+                    (m for m in monitors if not getattr(m, "is_primary", False)), monitors[0]
+                )
                 x, y = monitor.x, monitor.y
                 logger.info(f"🖥️ Monitor secundário: {monitor.name or 'sem nome'}")
             else:
@@ -40,9 +42,11 @@ class BrowserManager:
             return monitor, x, y
         except Exception as e:
             logger.warning(f"⚠️ Erro ao detectar monitores: {e}. Usando padrão.")
+
             class MonitorPadrao:
                 width = 1920
                 height = 1080
+
             return MonitorPadrao(), 0, 0
 
     @staticmethod

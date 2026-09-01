@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 DividirDialog — Divide um apontamento em dois no horário de corte.
 
@@ -18,21 +17,23 @@ DividirDialog — Divide um apontamento em dois no horário de corte.
 │  [ ✂️ Dividir ]        [ ✗ Cancelar ]        │
 └----------------------------------------------┘
 """
+
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
 
-from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-    QDialog, QDialogButtonBox, QFrame,
-    QHBoxLayout, QLabel, QVBoxLayout,
+    QDialog,
+    QDialogButtonBox,
+    QFrame,
+    QLabel,
     QMessageBox,
+    QVBoxLayout,
 )
 
 from src.core.apontamento_service import ApontamentoService
 from src.db.models import Apontamento
-from src.db.repository import HorarioInvalidoError, ApontamentoError
+from src.db.repository import ApontamentoError, HorarioInvalidoError
 from src.ui.style.tokens import ACCENT_TEXT, BORDER, DANGER, TEXT_PRIMARY, TEXT_SECONDARY
 from src.ui.widgets.hora_field import HoraField
 from src.utils.logger import get_logger
@@ -89,19 +90,18 @@ class DividirDialog(QDialog):
 
         # Contexto
         proj = self._apt.projeto[:40] + "..." if len(self._apt.projeto) > 40 else self._apt.projeto
-        tar  = self._apt.tarefa[:40]  + "..." if len(self._apt.tarefa) > 40  else self._apt.tarefa
+        tar = self._apt.tarefa[:40] + "..." if len(self._apt.tarefa) > 40 else self._apt.tarefa
         lbl_ctx = QLabel(f"{proj}  >  {tar}")
         lbl_ctx.setStyleSheet(f"color: {TEXT_SECONDARY}; font-size: 13px;")
         layout.addWidget(lbl_ctx)
 
         # Período original
-        ini_s  = self._apt.inicio.strftime("%H:%M:%S")
-        fim_s  = self._apt.fim.strftime("%H:%M:%S")
-        dur_s  = self._apt.duracao_str
+        ini_s = self._apt.inicio.strftime("%H:%M:%S")
+        fim_s = self._apt.fim.strftime("%H:%M:%S")
+        dur_s = self._apt.duracao_str
         lbl_per = QLabel(f"{ini_s}  ->  {fim_s}  ({dur_s})")
         lbl_per.setStyleSheet(
-            "font-family: 'JetBrains Mono','Consolas',monospace;"
-            "font-size: 13px; color: #E8EAF0;"
+            "font-family: 'JetBrains Mono','Consolas',monospace;font-size: 13px; color: #E8EAF0;"
         )
         layout.addWidget(lbl_per)
 
@@ -151,7 +151,7 @@ class DividirDialog(QDialog):
 
         # Botões
         btns = QDialogButtonBox()
-        self._btn_dividir  = btns.addButton("Dividir",   QDialogButtonBox.ButtonRole.AcceptRole)
+        self._btn_dividir = btns.addButton("Dividir", QDialogButtonBox.ButtonRole.AcceptRole)
         self._btn_cancelar = btns.addButton("Cancelar", QDialogButtonBox.ButtonRole.RejectRole)
         self._btn_dividir.setObjectName("btnIniciar")
         self._btn_cancelar.setObjectName("btnSecundario")
@@ -173,7 +173,7 @@ class DividirDialog(QDialog):
         self._lbl_aviso.setText("")
         self._btn_dividir.setEnabled(False)
 
-        cor_ok  = f"font-family:'JetBrains Mono','Consolas',monospace; font-size: 13px; color:{ACCENT_TEXT};"
+        cor_ok = f"font-family:'JetBrains Mono','Consolas',monospace; font-size: 13px; color:{ACCENT_TEXT};"
         cor_off = f"font-family:'JetBrains Mono','Consolas',monospace; font-size: 13px; color:{TEXT_SECONDARY};"
 
         if corte is None:
@@ -188,8 +188,7 @@ class DividirDialog(QDialog):
 
         if not (ini < corte < fim):
             self._lbl_aviso.setText(
-                f"O corte deve estar entre {ini.strftime('%H:%M:%S')} "
-                f"e {fim.strftime('%H:%M:%S')}."
+                f"O corte deve estar entre {ini.strftime('%H:%M:%S')} e {fim.strftime('%H:%M:%S')}."
             )
             self._lbl_p1.setText("Parte 1:  —")
             self._lbl_p2.setText("Parte 2:  —")

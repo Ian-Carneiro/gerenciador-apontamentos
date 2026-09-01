@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 AjustarHorarioDialog — Ajusta início e/ou fim de um apontamento.
 
@@ -17,21 +16,23 @@ AjustarHorarioDialog — Ajusta início e/ou fim de um apontamento.
 │  [ ✓ Salvar ]          [ ✗ Cancelar ]        │
 └----------------------------------------------┘
 """
+
 from __future__ import annotations
 
-from datetime import datetime
-from typing import Optional
-
-from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-    QDialog, QDialogButtonBox, QFrame,
-    QHBoxLayout, QLabel, QVBoxLayout,
-    QMessageBox, QCheckBox
+    QCheckBox,
+    QDialog,
+    QDialogButtonBox,
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QMessageBox,
+    QVBoxLayout,
 )
 
 from src.core.apontamento_service import ApontamentoService
 from src.db.models import Apontamento
-from src.db.repository import HorarioInvalidoError, SobreposicaoError, ApontamentoError
+from src.db.repository import ApontamentoError, HorarioInvalidoError, SobreposicaoError
 from src.ui.style.tokens import ACCENT_TEXT, BORDER, DANGER, TEXT_PRIMARY, TEXT_SECONDARY
 from src.ui.widgets.hora_field import HoraField
 from src.utils.logger import get_logger
@@ -76,8 +77,8 @@ class AjustarHorarioDialog(QDialog):
         layout.addWidget(lbl)
 
         # Contexto
-        proj  = self._apt.projeto[:40] + "..." if len(self._apt.projeto) > 40 else self._apt.projeto
-        tar   = self._apt.tarefa[:40]  + "..." if len(self._apt.tarefa) > 40  else self._apt.tarefa
+        proj = self._apt.projeto[:40] + "..." if len(self._apt.projeto) > 40 else self._apt.projeto
+        tar = self._apt.tarefa[:40] + "..." if len(self._apt.tarefa) > 40 else self._apt.tarefa
         lbl_ctx = QLabel(f"{proj}  >  {tar}")
         lbl_ctx.setStyleSheet(f"color: {TEXT_SECONDARY}; font-size: 13px;")
         layout.addWidget(lbl_ctx)
@@ -141,9 +142,7 @@ class AjustarHorarioDialog(QDialog):
         layout.addWidget(sep)
 
         self._lbl_preview = QLabel()
-        self._lbl_preview.setStyleSheet(
-            "font-size: 13px; color: #7EC99A; padding: 4px 0;"
-        )
+        self._lbl_preview.setStyleSheet("font-size: 13px; color: #7EC99A; padding: 4px 0;")
         layout.addWidget(self._lbl_preview)
         self._atualizar_preview()
 
@@ -151,7 +150,7 @@ class AjustarHorarioDialog(QDialog):
 
         # -- Botões ------------------------------------------------------------
         btns = QDialogButtonBox()
-        self._btn_salvar   = btns.addButton("Salvar",   QDialogButtonBox.ButtonRole.AcceptRole)
+        self._btn_salvar = btns.addButton("Salvar", QDialogButtonBox.ButtonRole.AcceptRole)
         self._btn_cancelar = btns.addButton("Cancelar", QDialogButtonBox.ButtonRole.RejectRole)
         self._btn_salvar.setObjectName("btnIniciar")
         self._btn_cancelar.setObjectName("btnSecundario")
@@ -171,7 +170,11 @@ class AjustarHorarioDialog(QDialog):
         ini = self._campo_inicio.valor(self._apt.inicio.date())
         remover_fim = bool(self._chk_remover_fim and self._chk_remover_fim.isChecked())
         fim_data_base = self._apt.fim.date() if self._apt.fim else self._apt.inicio.date()
-        fim = None if remover_fim else (self._campo_fim.valor(fim_data_base) if self._campo_fim else None)
+        fim = (
+            None
+            if remover_fim
+            else (self._campo_fim.valor(fim_data_base) if self._campo_fim else None)
+        )
 
         if remover_fim:
             self._lbl_preview.setText("Apontamento voltará a ficar em execução")
@@ -214,7 +217,7 @@ class AjustarHorarioDialog(QDialog):
     def _salvar(self):
         novo_inicio = self._campo_inicio.valor(self._apt.inicio.date())
         fim_data_base = self._apt.fim.date() if self._apt.fim else self._apt.inicio.date()
-        novo_fim    = self._campo_fim.valor(fim_data_base) if self._campo_fim else None
+        novo_fim = self._campo_fim.valor(fim_data_base) if self._campo_fim else None
 
         if novo_inicio is None:
             self._erro("Início inválido. Use o formato HH:MM:SS.")
@@ -232,7 +235,11 @@ class AjustarHorarioDialog(QDialog):
                 return
 
             delta_ini = novo_inicio - self._apt.inicio if novo_inicio != self._apt.inicio else None
-            delta_fim = (novo_fim - self._apt.fim) if (self._apt.fim and novo_fim and novo_fim != self._apt.fim) else None
+            delta_fim = (
+                (novo_fim - self._apt.fim)
+                if (self._apt.fim and novo_fim and novo_fim != self._apt.fim)
+                else None
+            )
 
             if delta_ini or delta_fim:
                 self._svc.slide_adjacentes(self._apt, delta_ini=delta_ini, delta_fim=delta_fim)
@@ -240,11 +247,12 @@ class AjustarHorarioDialog(QDialog):
             if novo_inicio != self._apt.inicio:
                 # fim antigo ainda não foi atualizado aqui; se ele também vai mudar,
                 # o intervalo intermediário pode colidir com o vizinho já deslocado
-                self._svc.ajustar_inicio(self._apt.id, novo_inicio, ignorar_sobreposicao=bool(delta_fim))
+                self._svc.ajustar_inicio(
+                    self._apt.id, novo_inicio, ignorar_sobreposicao=bool(delta_fim)
+                )
 
-            if self._apt.fim is not None and novo_fim is not None:
-                if novo_fim != self._apt.fim:
-                    self._svc.ajustar_fim(self._apt.id, novo_fim)
+            if (self._apt.fim is not None and novo_fim is not None) and novo_fim != self._apt.fim:
+                self._svc.ajustar_fim(self._apt.id, novo_fim)
 
             logger.info(f"Horario ajustado: id={self._apt.id}")
             self.accept()

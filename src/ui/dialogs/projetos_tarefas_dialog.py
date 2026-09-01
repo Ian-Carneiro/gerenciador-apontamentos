@@ -1,13 +1,21 @@
-# -*- coding: utf-8 -*-
 """Diálogo de edição de Projetos/Tarefas - corrige typos de entrada manual"""
-import unicodedata
+
 from functools import lru_cache
-from typing import Optional
+import unicodedata
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QTableWidget, QTableWidgetItem,
-    QHeaderView, QPushButton, QLabel, QMessageBox, QWidget, QLineEdit,
+    QDialog,
+    QHBoxLayout,
+    QHeaderView,
+    QLabel,
+    QLineEdit,
+    QMessageBox,
+    QPushButton,
+    QTableWidget,
+    QTableWidgetItem,
+    QVBoxLayout,
+    QWidget,
 )
 
 from src.db.repository import ApontamentoRepository
@@ -17,16 +25,18 @@ logger = get_logger(__name__)
 
 COL_PROJETO, COL_TAREFA, COL_ATIVO = range(3)
 
+
 @lru_cache(maxsize=1024)
 def _normalizar(texto: str) -> str:
     """Remove acentos e converte para minúscula (com cache)"""
     nfd = unicodedata.normalize("NFD", texto)
     return "".join(c for c in nfd if unicodedata.category(c) != "Mn").lower()
 
+
 class ProjetosTarefasDialog(QDialog):
     """Permite corrigir typos de projeto/tarefa direto na base (SQLite)"""
 
-    def __init__(self, repo: ApontamentoRepository, parent: Optional[QWidget] = None):
+    def __init__(self, repo: ApontamentoRepository, parent: QWidget | None = None):
         super().__init__(parent)
         self.repo = repo
         self.setWindowTitle("Editar Projetos / Tarefas")
@@ -34,10 +44,12 @@ class ProjetosTarefasDialog(QDialog):
         self.setModal(True)
 
         layout = QVBoxLayout(self)
-        layout.addWidget(QLabel(
-            "Duplo clique para editar. A correção é aplicada em todos os\n"
-            "apontamentos já lançados com esse par (histórico incluído)."
-        ))
+        layout.addWidget(
+            QLabel(
+                "Duplo clique para editar. A correção é aplicada em todos os\n"
+                "apontamentos já lançados com esse par (histórico incluído)."
+            )
+        )
 
         self.campo_busca = QLineEdit()
         self.campo_busca.setPlaceholderText("🔍 Filtrar por projeto ou tarefa...")
@@ -46,8 +58,12 @@ class ProjetosTarefasDialog(QDialog):
 
         self.tabela = QTableWidget(0, 3)
         self.tabela.setHorizontalHeaderLabels(["Projeto", "Tarefa", "Ativo"])
-        self.tabela.horizontalHeader().setSectionResizeMode(COL_PROJETO, QHeaderView.ResizeMode.Stretch)
-        self.tabela.horizontalHeader().setSectionResizeMode(COL_TAREFA, QHeaderView.ResizeMode.Stretch)
+        self.tabela.horizontalHeader().setSectionResizeMode(
+            COL_PROJETO, QHeaderView.ResizeMode.Stretch
+        )
+        self.tabela.horizontalHeader().setSectionResizeMode(
+            COL_TAREFA, QHeaderView.ResizeMode.Stretch
+        )
         layout.addWidget(self.tabela)
 
         botoes = QHBoxLayout()
@@ -57,7 +73,9 @@ class ProjetosTarefasDialog(QDialog):
         botoes.addStretch()
 
         btn_salvar = QPushButton("💾 Salvar Alterações")
-        btn_salvar.setStyleSheet("background:#4CAF50; color:white; font-weight:700; padding:6px 16px;")
+        btn_salvar.setStyleSheet(
+            "background:#4CAF50; color:white; font-weight:700; padding:6px 16px;"
+        )
         btn_salvar.clicked.connect(self._salvar)
         botoes.addWidget(btn_salvar)
 
@@ -104,9 +122,10 @@ class ProjetosTarefasDialog(QDialog):
         tarefa = self.tabela.item(row, COL_TAREFA).text()
 
         resposta = QMessageBox.question(
-            self, "Confirmar exclusão",
+            self,
+            "Confirmar exclusão",
             f"Remover '{projeto} / {tarefa}' da lista de sugestões?\n\n"
-            "Apontamentos já lançados com esse par NÃO serão apagados."
+            "Apontamentos já lançados com esse par NÃO serão apagados.",
         )
         if resposta != QMessageBox.StandardButton.Yes:
             return
@@ -136,8 +155,10 @@ class ProjetosTarefasDialog(QDialog):
                 )
                 item_projeto.setData(Qt.ItemDataRole.UserRole, (projeto_novo, tarefa_novo))
                 alteracoes += 1
-                logger.info(f"✏️ '{projeto_original}/{tarefa_original}' → "
-                            f"'{projeto_novo}/{tarefa_novo}' ({afetados} apontamentos)")
+                logger.info(
+                    f"✏️ '{projeto_original}/{tarefa_original}' → "
+                    f"'{projeto_novo}/{tarefa_novo}' ({afetados} apontamentos)"
+                )
 
             self.repo.atualizar_ativo_projeto_tarefa(projeto_novo, tarefa_novo, ativo_novo)
 

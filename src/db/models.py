@@ -1,16 +1,21 @@
-# -*- coding: utf-8 -*-
 """
 Modelos ORM — Apontador de Horas v5
 SQLAlchemy 2.0 (mapped_column / DeclarativeBase)
 """
+
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
 
 from sqlalchemy import (
-    Boolean, DateTime, Float, ForeignKey,
-    Integer, String, Text, UniqueConstraint, event,
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    event,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -21,6 +26,7 @@ class Base(DeclarativeBase):
 
 # ─── Apontamento ──────────────────────────────────────────────────────────────
 
+
 class Apontamento(Base):
     """
     Um intervalo de trabalho com início e fim na mesma row.
@@ -29,20 +35,21 @@ class Apontamento(Base):
     fim IS NULL  → apontamento em execução (no máximo 1 por vez)
     fim NOT NULL → apontamento finalizado
     """
+
     __tablename__ = "apontamentos"
 
-    id:            Mapped[int]            = mapped_column(Integer, primary_key=True, autoincrement=True)
-    projeto:       Mapped[str]            = mapped_column(String(500), nullable=False)
-    tarefa:        Mapped[str]            = mapped_column(String(500), nullable=False)
-    inicio:        Mapped[datetime]       = mapped_column(DateTime, nullable=False)
-    fim:           Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
-    parada:        Mapped[bool]           = mapped_column(Boolean, nullable=False, default=False)
-    nota:          Mapped[str]            = mapped_column(Text, nullable=False, default="")
-    criado_em:     Mapped[datetime]       = mapped_column(DateTime, nullable=False, default=datetime.now)
-    atualizado_em: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    projeto: Mapped[str] = mapped_column(String(500), nullable=False)
+    tarefa: Mapped[str] = mapped_column(String(500), nullable=False)
+    inicio: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    fim: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    parada: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    nota: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    criado_em: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.now)
+    atualizado_em: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     # Relacionamento com auditoria
-    audits: Mapped[list["ApontamentoAudit"]] = relationship(
+    audits: Mapped[list[ApontamentoAudit]] = relationship(
         "ApontamentoAudit",
         back_populates="apontamento",
         cascade="all, delete-orphan",
@@ -50,7 +57,7 @@ class Apontamento(Base):
     )
 
     @property
-    def horas(self) -> Optional[float]:
+    def horas(self) -> float | None:
         """Horas trabalhadas (None se ainda em execução)."""
         if self.fim is None:
             return None
@@ -89,23 +96,25 @@ class Apontamento(Base):
 
 # ─── Auditoria ────────────────────────────────────────────────────────────────
 
+
 class ApontamentoAudit(Base):
     """
     Registro imutável de cada alteração feita num Apontamento.
     Permite Undo/Redo e rastreabilidade.
     """
+
     __tablename__ = "apontamentos_audit"
 
     CAMPOS_VALIDOS = frozenset({"projeto", "tarefa", "inicio", "fim", "nota", "parada"})
 
-    id:              Mapped[int]            = mapped_column(Integer, primary_key=True, autoincrement=True)
-    apontamento_id:  Mapped[int]            = mapped_column(ForeignKey("apontamentos.id", ondelete="CASCADE"))
-    campo:           Mapped[str]            = mapped_column(String(50), nullable=False)
-    valor_anterior:  Mapped[Optional[str]]  = mapped_column(Text, nullable=True)
-    valor_novo:      Mapped[Optional[str]]  = mapped_column(Text, nullable=True)
-    alterado_em:     Mapped[datetime]       = mapped_column(DateTime, nullable=False, default=datetime.now)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    apontamento_id: Mapped[int] = mapped_column(ForeignKey("apontamentos.id", ondelete="CASCADE"))
+    campo: Mapped[str] = mapped_column(String(50), nullable=False)
+    valor_anterior: Mapped[str | None] = mapped_column(Text, nullable=True)
+    valor_novo: Mapped[str | None] = mapped_column(Text, nullable=True)
+    alterado_em: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.now)
 
-    apontamento: Mapped["Apontamento"] = relationship("Apontamento", back_populates="audits")
+    apontamento: Mapped[Apontamento] = relationship("Apontamento", back_populates="audits")
 
     def __repr__(self) -> str:
         return (
@@ -116,25 +125,25 @@ class ApontamentoAudit(Base):
 
 # ─── Projetos / Tarefas ───────────────────────────────────────────────────────
 
+
 class ProjetoTarefa(Base):
     """
     Cache local dos projetos/tarefas baixados do NetProject (XMLs).
     Substitui projetos_tarefas.csv.
     """
-    __tablename__ = "projetos_tarefas"
-    __table_args__ = (
-        UniqueConstraint("projeto", "tarefa", name="uq_projeto_tarefa"),
-    )
 
-    id:               Mapped[int]           = mapped_column(Integer, primary_key=True, autoincrement=True)
-    projeto:          Mapped[str]           = mapped_column(String(500), nullable=False)
-    tarefa:           Mapped[str]           = mapped_column(String(500), nullable=False)
-    ativo:            Mapped[bool]          = mapped_column(Boolean, nullable=False, default=True)
-    start_date:       Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
-    finish_date:      Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
-    percent_complete: Mapped[int]           = mapped_column(Integer, nullable=False, default=0)
-    notes:            Mapped[str]           = mapped_column(Text, nullable=False, default="")
-    atualizado_em:    Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    __tablename__ = "projetos_tarefas"
+    __table_args__ = (UniqueConstraint("projeto", "tarefa", name="uq_projeto_tarefa"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    projeto: Mapped[str] = mapped_column(String(500), nullable=False)
+    tarefa: Mapped[str] = mapped_column(String(500), nullable=False)
+    ativo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    start_date: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    finish_date: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    percent_complete: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    notes: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    atualizado_em: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     def __repr__(self) -> str:
         return f"<ProjetoTarefa {self.projeto[:20]} / {self.tarefa[:20]}>"
@@ -142,23 +151,23 @@ class ProjetoTarefa(Base):
 
 # ─── De/Para ──────────────────────────────────────────────────────────────────
 
+
 class DePara(Base):
     """
     Regras de substituição de nomes de projeto/tarefa.
     Substitui a seção 'depara' do config_netproject.json.
     Mantemos o JSON também para compatibilidade com o ConfigNetProjectHandler.
     """
+
     __tablename__ = "depara"
-    __table_args__ = (
-        UniqueConstraint("tipo", "de", name="uq_depara_tipo_de"),
-    )
+    __table_args__ = (UniqueConstraint("tipo", "de", name="uq_depara_tipo_de"),)
 
     TIPO_PROJETO = "projeto"
-    TIPO_TAREFA  = "tarefa"
+    TIPO_TAREFA = "tarefa"
 
-    id:   Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    tipo: Mapped[str] = mapped_column(String(10), nullable=False)   # 'projeto' | 'tarefa'
-    de:   Mapped[str] = mapped_column(String(500), nullable=False)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tipo: Mapped[str] = mapped_column(String(10), nullable=False)  # 'projeto' | 'tarefa'
+    de: Mapped[str] = mapped_column(String(500), nullable=False)
     para: Mapped[str] = mapped_column(String(500), nullable=False)
 
     def __repr__(self) -> str:
@@ -166,6 +175,7 @@ class DePara(Base):
 
 
 # ─── SQLAlchemy event: atualiza atualizado_em automaticamente ─────────────────
+
 
 @event.listens_for(Apontamento, "before_update")
 def _set_atualizado_em(mapper, connection, target: Apontamento):

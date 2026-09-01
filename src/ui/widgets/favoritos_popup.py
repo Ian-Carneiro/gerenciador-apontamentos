@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 FavoritosPopup — popup de seleção rápida de favoritos.
 
@@ -10,6 +9,7 @@ Uso:
     popup.favorito_escolhido.connect(handler)
     popup.abrir_em(pos_global, largura_ref)
 """
+
 from __future__ import annotations
 
 from PySide6.QtCore import Qt, Signal

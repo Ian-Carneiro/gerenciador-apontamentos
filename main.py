@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Ponto de entrada — Apontador de Horas v5.
 
@@ -7,17 +6,18 @@ Ordem de bootstrap:
   2. ApontamentoService()   → instancia repo + service
   3. QApplication + MainWindow
 """
-import sys
+
 from pathlib import Path
+import sys
 
 # Garante que src/ esteja no path ao rodar direto
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QApplication
 
-from src.db.database import init_db
 from src.core.apontamento_service import ApontamentoService
+from src.db.database import init_db
 from src.ui.main_window import MainWindow
 from src.utils.logger import get_logger
 

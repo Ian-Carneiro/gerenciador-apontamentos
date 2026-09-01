@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 ApontamentoRepository — Camada de acesso a dados.
 
@@ -9,17 +8,17 @@ Regras de negócio de baixo nível (validações de intervalo, sobreposição)
 ficam aqui. Regras de negócio de alto nível (ex: trocar tarefa automaticamente)
 ficam em ApontamentoService.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, date
-from typing import Optional
+from datetime import date, datetime
 
-from sqlalchemy import select, and_, or_, func
+from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import Session
 
 from src.db.database import get_session
-from src.db.models import Apontamento, ApontamentoAudit, ProjetoTarefa, DePara
+from src.db.models import Apontamento, ApontamentoAudit, ProjetoTarefa
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -27,12 +26,14 @@ logger = get_logger(__name__)
 
 # ── Exceções de domínio ───────────────────────────────────────────────────────
 
+
 class ApontamentoError(Exception):
     """Erro de regra de negócio nos apontamentos."""
 
 
 class SobreposicaoError(ApontamentoError):
     """Novo intervalo conflita com um já existente."""
+
     def __init__(self, conflito: Apontamento):
         self.conflito = conflito
         super().__init__(
@@ -53,9 +54,11 @@ class HorarioInvalidoError(ApontamentoError):
 
 # ── DTOs ──────────────────────────────────────────────────────────────────────
 
+
 @dataclass
 class BlocoHistorico:
     """Grupo de apontamentos de um mesmo dia para exibição no histórico."""
+
     data: date
     apontamentos: list[Apontamento]
 
@@ -71,6 +74,7 @@ class BlocoHistorico:
 
 
 # ── Repository ────────────────────────────────────────────────────────────────
+
 
 class ApontamentoRepository:
     """
@@ -163,9 +167,7 @@ class ApontamentoRepository:
 
             self._assert_sem_ativo(s)
 
-            posterior = s.scalars(
-                select(Apontamento).where(Apontamento.inicio > apt.fim)
-            ).first()
+            posterior = s.scalars(select(Apontamento).where(Apontamento.inicio > apt.fim)).first()
             if posterior is not None:
                 raise ApontamentoError(
                     f"Não é possível reabrir: existe apontamento posterior "
@@ -240,7 +242,7 @@ class ApontamentoRepository:
 
         if not apts:
             inicio_dia = datetime.combine(dia, datetime.min.time())
-            fim_dia    = datetime.combine(dia, datetime.max.time().replace(microsecond=0))
+            fim_dia = datetime.combine(dia, datetime.max.time().replace(microsecond=0))
             return [(inicio_dia, fim_dia)]
 
         intervalos: list[tuple[datetime, datetime]] = []
@@ -252,8 +254,8 @@ class ApontamentoRepository:
 
         # Intervalos entre apontamentos consecutivos
         for i in range(len(apts) - 1):
-            fim_atual    = apts[i].fim
-            inicio_prox  = apts[i + 1].inicio
+            fim_atual = apts[i].fim
+            inicio_prox = apts[i + 1].inicio
             if fim_atual and inicio_prox > fim_atual:
                 intervalos.append((fim_atual, inicio_prox))
 
@@ -287,8 +289,7 @@ class ApontamentoRepository:
 
             if original.fim is None:
                 raise ApontamentoError(
-                    "Não é possível dividir um apontamento em execução. "
-                    "Pare-o primeiro."
+                    "Não é possível dividir um apontamento em execução. Pare-o primeiro."
                 )
 
             if not (original.inicio < horario_corte < original.fim):
@@ -301,7 +302,9 @@ class ApontamentoRepository:
             fim_original = original.fim
 
             # Registra auditoria antes de modificar
-            self._registrar_audit(s, original, "fim", fim_original.isoformat(), horario_corte.isoformat())
+            self._registrar_audit(
+                s, original, "fim", fim_original.isoformat(), horario_corte.isoformat()
+            )
 
             # Encurta o original
             original.fim = horario_corte
@@ -318,9 +321,11 @@ class ApontamentoRepository:
             s.add(segunda)
             s.flush()
 
-            logger.info(f"✂️  Dividido id={apontamento_id}: "
-                        f"{original.inicio.strftime('%H:%M')}→{horario_corte.strftime('%H:%M')} "
-                        f"| {horario_corte.strftime('%H:%M')}→{fim_original.strftime('%H:%M')}")
+            logger.info(
+                f"✂️  Dividido id={apontamento_id}: "
+                f"{original.inicio.strftime('%H:%M')}→{horario_corte.strftime('%H:%M')} "
+                f"| {horario_corte.strftime('%H:%M')}→{fim_original.strftime('%H:%M')}"
+            )
             return original, segunda
 
     # ── Edição ────────────────────────────────────────────────────────────────
@@ -339,7 +344,7 @@ class ApontamentoRepository:
             apt = self._get_or_raise(s, apontamento_id)
 
             projeto = projeto.strip()
-            tarefa  = tarefa.strip()
+            tarefa = tarefa.strip()
 
             if apt.projeto != projeto:
                 self._registrar_audit(s, apt, "projeto", apt.projeto, projeto)
@@ -353,10 +358,7 @@ class ApontamentoRepository:
             return apt
 
     def ajustar_inicio(
-        self,
-        apontamento_id: int,
-        novo_inicio: datetime,
-        ignorar_sobreposicao=False
+        self, apontamento_id: int, novo_inicio: datetime, ignorar_sobreposicao=False
     ) -> Apontamento:
         """
         Ajusta o horário de início.
@@ -385,10 +387,7 @@ class ApontamentoRepository:
             return apt
 
     def ajustar_fim(
-        self,
-        apontamento_id: int,
-        novo_fim: datetime,
-        ignorar_sobreposicao=False
+        self, apontamento_id: int, novo_fim: datetime, ignorar_sobreposicao=False
     ) -> Apontamento:
         """
         Ajusta o horário de fim.
@@ -441,13 +440,13 @@ class ApontamentoRepository:
 
     # ── Consultas ─────────────────────────────────────────────────────────────
 
-    def obter_ativo(self) -> Optional[Apontamento]:
+    def obter_ativo(self) -> Apontamento | None:
         """Retorna o apontamento em execução, ou None."""
         with get_session() as s:
             stmt = select(Apontamento).where(Apontamento.fim.is_(None))
             return s.scalars(stmt).first()
 
-    def obter_por_id(self, apontamento_id: int) -> Optional[Apontamento]:
+    def obter_por_id(self, apontamento_id: int) -> Apontamento | None:
         with get_session() as s:
             return s.get(Apontamento, apontamento_id)
 
@@ -456,7 +455,7 @@ class ApontamentoRepository:
         with get_session() as s:
             return self._apontamentos_do_dia(s, dia, incluir_em_execucao=True)
 
-    def buscar_por_inicio(self, inicio: datetime) -> Optional[Apontamento]:
+    def buscar_por_inicio(self, inicio: datetime) -> Apontamento | None:
         """Retorna o apontamento que começa exatamente em `inicio`, ou None."""
         with get_session() as s:
             stmt = select(Apontamento).where(Apontamento.inicio == inicio)
@@ -465,7 +464,7 @@ class ApontamentoRepository:
                 _ = apt.projeto, apt.tarefa, apt.inicio, apt.fim
             return apt
 
-    def buscar_por_fim(self, fim: datetime) -> Optional[Apontamento]:
+    def buscar_por_fim(self, fim: datetime) -> Apontamento | None:
         """Retorna o apontamento que termina exatamente em `fim`, ou None."""
         with get_session() as s:
             stmt = select(Apontamento).where(Apontamento.fim == fim)
@@ -481,10 +480,7 @@ class ApontamentoRepository:
         """
         with get_session() as s:
             # Busca apontamentos finalizados agrupados por data
-            stmt = (
-                select(Apontamento)
-                .order_by(Apontamento.inicio.desc())
-            )
+            stmt = select(Apontamento).order_by(Apontamento.inicio.desc())
             apts = list(s.scalars(stmt).all())
 
         # Agrupa por data
@@ -504,8 +500,8 @@ class ApontamentoRepository:
         self,
         texto: str = "",
         projeto: str = "",
-        data_inicio: Optional[date] = None,
-        data_fim: Optional[date] = None,
+        data_inicio: date | None = None,
+        data_fim: date | None = None,
     ) -> list[Apontamento]:
         """
         Busca com filtros opcionais. Todos os parâmetros são combinados (AND).
@@ -515,11 +511,13 @@ class ApontamentoRepository:
 
             if texto:
                 like = f"%{texto}%"
-                conditions.append(or_(
-                    Apontamento.projeto.ilike(like),
-                    Apontamento.tarefa.ilike(like),
-                    Apontamento.nota.ilike(like),
-                ))
+                conditions.append(
+                    or_(
+                        Apontamento.projeto.ilike(like),
+                        Apontamento.tarefa.ilike(like),
+                        Apontamento.nota.ilike(like),
+                    )
+                )
 
             if projeto:
                 conditions.append(Apontamento.projeto.ilike(f"%{projeto}%"))
@@ -532,11 +530,7 @@ class ApontamentoRepository:
                 dt_fim = datetime.combine(data_fim, datetime.max.time())
                 conditions.append(Apontamento.inicio <= dt_fim)
 
-            stmt = (
-                select(Apontamento)
-                .where(*conditions)
-                .order_by(Apontamento.inicio.desc())
-            )
+            stmt = select(Apontamento).where(*conditions).order_by(Apontamento.inicio.desc())
             return list(s.scalars(stmt).all())
 
     def total_horas_dia(self, dia: date) -> float:
@@ -602,9 +596,11 @@ class ApontamentoRepository:
             return count
 
     def renomear_projeto_tarefa(
-            self,
-            projeto_atual: str, tarefa_atual: str,
-            projeto_novo: str, tarefa_novo: str,
+        self,
+        projeto_atual: str,
+        tarefa_atual: str,
+        projeto_novo: str,
+        tarefa_novo: str,
     ) -> int:
         """
         Corrige projeto/tarefa em massa: atualiza todos os Apontamentos que
@@ -617,12 +613,14 @@ class ApontamentoRepository:
         tarefa_novo = tarefa_novo.strip()
 
         with get_session() as s:
-            apts = list(s.scalars(
-                select(Apontamento).where(
-                    Apontamento.projeto == projeto_atual,
-                    Apontamento.tarefa == tarefa_atual,
+            apts = list(
+                s.scalars(
+                    select(Apontamento).where(
+                        Apontamento.projeto == projeto_atual,
+                        Apontamento.tarefa == tarefa_atual,
                     )
-            ).all())
+                ).all()
+            )
 
             for apt in apts:
                 if apt.projeto != projeto_novo:
@@ -632,12 +630,18 @@ class ApontamentoRepository:
                     self._registrar_audit(s, apt, "tarefa", apt.tarefa, tarefa_novo)
                     apt.tarefa = tarefa_novo
 
-            pt_atual = s.scalars(select(ProjetoTarefa).where(
-                ProjetoTarefa.projeto == projeto_atual, ProjetoTarefa.tarefa == tarefa_atual,
-                )).first()
-            pt_novo = s.scalars(select(ProjetoTarefa).where(
-                ProjetoTarefa.projeto == projeto_novo, ProjetoTarefa.tarefa == tarefa_novo,
-                )).first()
+            pt_atual = s.scalars(
+                select(ProjetoTarefa).where(
+                    ProjetoTarefa.projeto == projeto_atual,
+                    ProjetoTarefa.tarefa == tarefa_atual,
+                )
+            ).first()
+            pt_novo = s.scalars(
+                select(ProjetoTarefa).where(
+                    ProjetoTarefa.projeto == projeto_novo,
+                    ProjetoTarefa.tarefa == tarefa_novo,
+                )
+            ).first()
 
             if pt_atual and pt_novo and pt_atual.id != pt_novo.id:
                 s.delete(pt_atual)  # destino já existia — funde, descarta o antigo
@@ -645,26 +649,41 @@ class ApontamentoRepository:
                 pt_atual.projeto = projeto_novo
                 pt_atual.tarefa = tarefa_novo
             elif not pt_atual and not pt_novo:
-                s.add(ProjetoTarefa(projeto=projeto_novo, tarefa=tarefa_novo, ativo=True, atualizado_em=datetime.now()))
+                s.add(
+                    ProjetoTarefa(
+                        projeto=projeto_novo,
+                        tarefa=tarefa_novo,
+                        ativo=True,
+                        atualizado_em=datetime.now(),
+                    )
+                )
 
-            logger.info(f"✏️ Renomeado em massa: '{projeto_atual}/{tarefa_atual}' → "
-                        f"'{projeto_novo}/{tarefa_novo}' ({len(apts)} apontamentos)")
+            logger.info(
+                f"✏️ Renomeado em massa: '{projeto_atual}/{tarefa_atual}' → "
+                f"'{projeto_novo}/{tarefa_novo}' ({len(apts)} apontamentos)"
+            )
             return len(apts)
 
     def atualizar_ativo_projeto_tarefa(self, projeto: str, tarefa: str, ativo: bool) -> None:
         with get_session() as s:
-            pt = s.scalars(select(ProjetoTarefa).where(
-                ProjetoTarefa.projeto == projeto, ProjetoTarefa.tarefa == tarefa,
-                )).first()
+            pt = s.scalars(
+                select(ProjetoTarefa).where(
+                    ProjetoTarefa.projeto == projeto,
+                    ProjetoTarefa.tarefa == tarefa,
+                )
+            ).first()
             if pt:
                 pt.ativo = ativo
 
     def deletar_projeto_tarefa(self, projeto: str, tarefa: str) -> bool:
         """Remove só da lista de sugestão (combos). Apontamentos já lançados não são afetados."""
         with get_session() as s:
-            pt = s.scalars(select(ProjetoTarefa).where(
-                ProjetoTarefa.projeto == projeto, ProjetoTarefa.tarefa == tarefa,
-                )).first()
+            pt = s.scalars(
+                select(ProjetoTarefa).where(
+                    ProjetoTarefa.projeto == projeto,
+                    ProjetoTarefa.tarefa == tarefa,
+                )
+            ).first()
             if not pt:
                 return False
             s.delete(pt)
@@ -680,9 +699,7 @@ class ApontamentoRepository:
         return apt
 
     def _assert_sem_ativo(self, s: Session) -> None:
-        ativo = s.scalars(
-            select(Apontamento).where(Apontamento.fim.is_(None))
-        ).first()
+        ativo = s.scalars(select(Apontamento).where(Apontamento.fim.is_(None))).first()
         if ativo is not None:
             raise ApontamentoAtivoError(
                 f"Já há um apontamento em execução: {ativo.projeto} / {ativo.tarefa} "
@@ -693,8 +710,8 @@ class ApontamentoRepository:
         self,
         s: Session,
         inicio: datetime,
-        fim: Optional[datetime],
-        excluir_id: Optional[int],
+        fim: datetime | None,
+        excluir_id: int | None,
     ) -> None:
         """
         Verifica se o intervalo [inicio, fim] conflita com algum apontamento existente.
@@ -736,7 +753,7 @@ class ApontamentoRepository:
         incluir_em_execucao: bool = True,
     ) -> list[Apontamento]:
         inicio_dia = datetime.combine(dia, datetime.min.time())
-        fim_dia    = datetime.combine(dia, datetime.max.time())
+        fim_dia = datetime.combine(dia, datetime.max.time())
 
         stmt = (
             select(Apontamento)
@@ -752,8 +769,12 @@ class ApontamentoRepository:
 
     def _upsert_projeto_tarefa(self, s: Session, projeto: str, tarefa: str) -> None:
         from sqlalchemy.dialects.sqlite import insert as sqlite_insert
+
         stmt = sqlite_insert(ProjetoTarefa).values(
-            projeto=projeto, tarefa=tarefa, ativo=True, atualizado_em=datetime.now(),
+            projeto=projeto,
+            tarefa=tarefa,
+            ativo=True,
+            atualizado_em=datetime.now(),
         )
         stmt = stmt.on_conflict_do_nothing(index_elements=["projeto", "tarefa"])
         s.execute(stmt)
@@ -763,14 +784,16 @@ class ApontamentoRepository:
         s: Session,
         apt: Apontamento,
         campo: str,
-        valor_anterior: Optional[str],
-        valor_novo: Optional[str],
+        valor_anterior: str | None,
+        valor_novo: str | None,
     ) -> None:
         if campo not in ApontamentoAudit.CAMPOS_VALIDOS:
             raise ValueError(f"Campo de auditoria inválido: {campo!r}")
-        s.add(ApontamentoAudit(
-            apontamento_id=apt.id,
-            campo=campo,
-            valor_anterior=valor_anterior,
-            valor_novo=valor_novo,
-        ))
+        s.add(
+            ApontamentoAudit(
+                apontamento_id=apt.id,
+                campo=campo,
+                valor_anterior=valor_anterior,
+                valor_novo=valor_novo,
+            )
+        )

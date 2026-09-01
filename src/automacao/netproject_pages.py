@@ -1,9 +1,10 @@
-# -*- coding: utf-8 -*-
 """Page Objects para NetProject - PLAYWRIGHT"""
+
 from pathlib import Path
 
 import config
 from src.utils.logger import get_logger
+
 from .page_base import BasePage
 
 logger = get_logger(__name__)
@@ -56,14 +57,18 @@ class LoginPage(BasePage):
 class ApontamentoPage(BasePage):
     """Página de apontamentos do NetProject"""
 
-    URL = ("https://synchro.netproject.com.br/index.php?page=meta/view"
-           "&id_view=usuario_recurso_cadastro&_menu_acessado=444")
+    URL = (
+        "https://synchro.netproject.com.br/index.php?page=meta/view"
+        "&id_view=usuario_recurso_cadastro&_menu_acessado=444"
+    )
 
     DATA_INPUT = "[id='dth_ponto_eletronico**93,0;180___dat//0/0']"
     BTN_ADICIONAR = "[id='btn_cadastro_detalhe_1_n_+']"
     TBODY_LINHAS = "#body_mestre_detalhe_tabela_214_122_0"
     BTN_SUBMIT = "button#btn_cadastro_submit"
-    SELECT2_INPUT = "#body_main > span > span > span.select2-search.select2-search--dropdown > input"
+    SELECT2_INPUT = (
+        "#body_main > span > span > span.select2-search.select2-search--dropdown > input"
+    )
     SELECT2_RESULTS = "#body_main > span > span > span.select2-results"
 
     def abrir(self):
@@ -117,7 +122,9 @@ class ApontamentoPage(BasePage):
         Se não confirmar, fecha o dropdown e reabre do zero.
         """
         for tentativa in range(1, tentativas + 1):
-            self.page.keyboard.press("Escape")  # garante que nada ficou aberto de tentativa anterior
+            self.page.keyboard.press(
+                "Escape"
+            )  # garante que nada ficou aberto de tentativa anterior
             self.sleep(0.2)
 
             elemento_trigger.click()
@@ -132,7 +139,9 @@ class ApontamentoPage(BasePage):
             campo.press_sequentially(valor, delay=6)
             self.sleep(0.6)
 
-            opcoes = resultados.locator("li.select2-results__option").filter(has_not_text="carregando")
+            opcoes = resultados.locator("li.select2-results__option").filter(
+                has_not_text="carregando"
+            )
 
             if opcoes.count() > 0:
                 opcoes.first.click()
@@ -147,7 +156,9 @@ class ApontamentoPage(BasePage):
                     f"— tentativa {tentativa}/{tentativas}"
                 )
             else:
-                logger.warning(f"⚠️ Select2 sem resultados para '{valor}' (tentativa {tentativa}/{tentativas})")
+                logger.warning(
+                    f"⚠️ Select2 sem resultados para '{valor}' (tentativa {tentativa}/{tentativas})"
+                )
 
             self.sleep(0.5)
 
@@ -172,10 +183,23 @@ class ApontamentoPage(BasePage):
 
     def enviar(self) -> bool:
         try:
-            self.page.click(self.BTN_SUBMIT)
-            self.sleep(1)
+            with self.page.expect_navigation():
+                self.page.click(self.BTN_SUBMIT)
+
+            self.sleep(5)
+
+            modal = self.page.locator("#info-msg-modal")
+
+            try:
+                modal.wait_for(state="visible", timeout=3000)
+                modal.locator("xpath=..").locator(".ui-dialog-titlebar-close").click()
+                logger.info("ℹ️ Modal de informação fechada")
+            except TimeoutError:
+                pass
+
             logger.info("✅ Apontamentos enviados e confirmados")
             return True
+
         except Exception as e:
             logger.error(f"❌ Erro ao enviar/confirmar: {e}")
             return False

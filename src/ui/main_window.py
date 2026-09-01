@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 MainWindow — Janela principal do Apontador de Horas v5.
 
@@ -19,6 +18,7 @@ Layout:
   │  ● Em execução . Projeto > Tarefa . 12:34  │
   └--------------------------------------------─┘
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -26,17 +26,22 @@ from pathlib import Path
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
-    QApplication, QFrame, QHBoxLayout, QLabel,
-    QMainWindow, QMessageBox, QPushButton,
-    QTextEdit, QVBoxLayout, QWidget,
-    QProgressDialog
+    QApplication,
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QMainWindow,
+    QMessageBox,
+    QProgressDialog,
+    QPushButton,
+    QTextEdit,
+    QVBoxLayout,
+    QWidget,
 )
 
 from src.core.apontamento_service import ApontamentoService, EstadoApp
-from src.db.repository import (
-    ApontamentoAtivoError, HorarioInvalidoError, SobreposicaoError
-)
 from src.db.models import Apontamento
+from src.db.repository import ApontamentoAtivoError, HorarioInvalidoError, SobreposicaoError
 from src.ui import messagebox_utils as mbox
 from src.ui.widgets.favoritos_popup import FavoritosPopup
 from src.ui.widgets.filterable_combo import FilterableComboBox
@@ -59,12 +64,12 @@ def _carregar_qss() -> str:
 
 # -- MainWindow ----------------------------------------------------------------
 
-class MainWindow(QMainWindow):
 
+class MainWindow(QMainWindow):
     def __init__(self, service: ApontamentoService):
         super().__init__()
         self._svc = service
-        self._dados_pt: list[dict] = []   # cache [{projeto, tarefa}]
+        self._dados_pt: list[dict] = []  # cache [{projeto, tarefa}]
 
         self.setWindowTitle("Apontador de Horas")
         self.setMinimumSize(520, 520)
@@ -150,7 +155,7 @@ class MainWindow(QMainWindow):
         linha_horas = QHBoxLayout()
         linha_horas.setSpacing(20)
         self._hora_inicio = HoraField("INÍCIO")
-        self._hora_fim    = HoraField("FIM")
+        self._hora_fim = HoraField("FIM")
         linha_horas.addWidget(self._hora_inicio)
         linha_horas.addWidget(self._hora_fim)
         linha_horas.addStretch()
@@ -259,7 +264,7 @@ class MainWindow(QMainWindow):
             self._aplicar_estado_inativo()
 
     def _popular_combos(self):
-        projetos = sorted(set(d["projeto"] for d in self._dados_pt))
+        projetos = sorted({d["projeto"] for d in self._dados_pt})
         self._combo_projeto.set_dados(projetos)
         self._combo_tarefa.set_dados_por_pai(
             dados=self._dados_pt,
@@ -275,7 +280,7 @@ class MainWindow(QMainWindow):
 
     def _on_iniciar(self):
         projeto = self._combo_projeto.valor_atual()
-        tarefa  = self._combo_tarefa.valor_atual()
+        tarefa = self._combo_tarefa.valor_atual()
 
         if not projeto:
             self._mostrar_erro("Selecione um projeto antes de iniciar.")
@@ -287,14 +292,12 @@ class MainWindow(QMainWindow):
             return
 
         inicio = self._hora_inicio.valor()
-        fim    = self._hora_fim.valor()
-        nota   = self._nota.toPlainText().strip()
+        fim = self._hora_fim.valor()
+        nota = self._nota.toPlainText().strip()
 
         # Valida: se fim preenchido, inicio obrigatório
         if fim is not None and inicio is None:
-            self._mostrar_erro(
-                "Preencha também o Início quando informar o Fim."
-            )
+            self._mostrar_erro("Preencha também o Início quando informar o Fim.")
             return
 
         try:
@@ -339,7 +342,7 @@ class MainWindow(QMainWindow):
         self._popular_favoritos()
 
     def _on_parar(self):
-        fim  = self._hora_fim.valor()
+        fim = self._hora_fim.valor()
         nota = self._nota.toPlainText().strip()
 
         try:
@@ -353,9 +356,7 @@ class MainWindow(QMainWindow):
         self._nota.clear()
 
         self._aplicar_estado_inativo()
-        self._mostrar_toast(
-            f"Parado: {parado.projeto} > {parado.tarefa} ({parado.duracao_str})"
-        )
+        self._mostrar_toast(f"Parado: {parado.projeto} > {parado.tarefa} ({parado.duracao_str})")
         self._atualizar_total_hoje()
         self._popular_favoritos()
 
@@ -392,6 +393,7 @@ class MainWindow(QMainWindow):
 
     def _atualizar_total_hoje(self):
         from datetime import date
+
         total = self._svc._repo.total_horas_dia(date.today())
         self._status_bar.set_total_hoje(total)
 
@@ -400,6 +402,7 @@ class MainWindow(QMainWindow):
     def _abrir_historico(self):
         """Abre o diálogo de histórico (implementado na Fase 4)."""
         from src.ui.dialogs.historico_dialog import HistoricoDialog
+
         dlg = HistoricoDialog(self._svc, parent=self)
         dlg.exec()
         # Recarrega estado após fechar (pode ter editado algo)
@@ -407,6 +410,7 @@ class MainWindow(QMainWindow):
 
     def _mostrar_intervalos_livres(self):
         from datetime import date
+
         intervalos = self._svc.obter_intervalos_livres(date.today())
 
         if not intervalos:
@@ -434,7 +438,10 @@ class MainWindow(QMainWindow):
 
     def _on_automacao_netproject(self):
         from src.automacao.exceptions import (
-            AutomacaoError, CredenciaisInvalidasError, EnvioCanceladoError, NenhumApontamentoError,
+            AutomacaoError,
+            CredenciaisInvalidasError,
+            EnvioCanceladoError,
+            NenhumApontamentoError,
         )
         from src.automacao.netproject_automacao import AutomacaoNetProject
         from src.ui.dialogs.confirmacao_dialogs import confirmar_apontamentos_netproject
@@ -456,7 +463,8 @@ class MainWindow(QMainWindow):
             self._mostrar_toast("Envio cancelado")
             return
 
-        confirmar_envio = lambda: confirmar_apontamentos_netproject(apontamentos, data_str, parent=self)
+        def confirmar_envio():
+            return confirmar_apontamentos_netproject(apontamentos, data_str, parent=self)
 
         try:
             automacao.enviar(apontamentos, data_str, confirmar_envio=confirmar_envio)
@@ -477,7 +485,10 @@ class MainWindow(QMainWindow):
 
     def _on_automacao_sgiweb(self):
         from src.automacao.exceptions import (
-            AutomacaoError, CredenciaisInvalidasError, NenhumApontamentoError, SobrescritaCanceladaError,
+            AutomacaoError,
+            CredenciaisInvalidasError,
+            NenhumApontamentoError,
+            SobrescritaCanceladaError,
         )
         from src.automacao.sgiweb_automacao import AutomacaoSGIWeb
         from src.ui.dialogs.confirmacao_dialogs import confirmar_horarios_sgiweb
@@ -499,9 +510,10 @@ class MainWindow(QMainWindow):
             self._mostrar_toast("Envio cancelado")
             return
 
-        confirmar_sobrescrita = lambda: mbox.askyesno(
-            "Aviso", "Esta data já possui apontamentos.\nDeseja sobrescrever?", parent=self
-        )
+        def confirmar_sobrescrita():
+            return mbox.askyesno(
+                "Aviso", "Esta data já possui apontamentos.\nDeseja sobrescrever?", parent=self
+            )
 
         try:
             automacao.enviar(horarios, data_str, confirmar_sobrescrita=confirmar_sobrescrita)

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 EditarDialog — Edita projeto, tarefa e nota de um apontamento.
 
@@ -12,12 +11,15 @@ EditarDialog — Edita projeto, tarefa e nota de um apontamento.
 │  [ ✓ Salvar ]          [ ✗ Cancelar ]       │
 └--------------------------------------------─┘
 """
+
 from __future__ import annotations
 
-from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-    QDialog, QDialogButtonBox, QHBoxLayout,
-    QLabel, QTextEdit, QVBoxLayout, QWidget,
+    QDialog,
+    QDialogButtonBox,
+    QLabel,
+    QTextEdit,
+    QVBoxLayout,
 )
 
 from src.core.apontamento_service import ApontamentoService
@@ -66,8 +68,8 @@ class EditarDialog(QDialog):
 
         # Info do intervalo (somente leitura)
         inicio_str = self._apt.inicio.strftime("%d/%m/%Y  %H:%M:%S")
-        fim_str    = self._apt.fim.strftime("%H:%M:%S") if self._apt.fim else "em execução"
-        lbl_info   = QLabel(f"{inicio_str}  ->  {fim_str}  ({self._apt.duracao_str})")
+        fim_str = self._apt.fim.strftime("%H:%M:%S") if self._apt.fim else "em execução"
+        lbl_info = QLabel(f"{inicio_str}  ->  {fim_str}  ({self._apt.duracao_str})")
         lbl_info.setStyleSheet("color: #8B90A0; font-size: 12px;")
         layout.addWidget(lbl_info)
 
@@ -76,7 +78,7 @@ class EditarDialog(QDialog):
         # Projeto
         layout.addWidget(self._caption("PROJETO"))
         dados_pt = self._svc._projetos_tarefas_como_dicts()
-        projetos  = sorted(set(d["projeto"] for d in dados_pt))
+        projetos = sorted({d["projeto"] for d in dados_pt})
 
         self._combo_projeto = FilterableComboBox(placeholder="Selecionar projeto...")
         self._combo_projeto.set_dados(projetos)
@@ -104,7 +106,7 @@ class EditarDialog(QDialog):
 
         # Botões
         btns = QDialogButtonBox()
-        self._btn_salvar   = btns.addButton("Salvar",   QDialogButtonBox.ButtonRole.AcceptRole)
+        self._btn_salvar = btns.addButton("Salvar", QDialogButtonBox.ButtonRole.AcceptRole)
         self._btn_cancelar = btns.addButton("Cancelar", QDialogButtonBox.ButtonRole.RejectRole)
         self._btn_salvar.setObjectName("btnIniciar")
         self._btn_cancelar.setObjectName("btnSecundario")
@@ -129,8 +131,8 @@ class EditarDialog(QDialog):
 
     def _salvar(self):
         projeto = self._combo_projeto.valor_atual()
-        tarefa  = self._combo_tarefa.valor_atual()
-        nota    = self._nota.toPlainText().strip()
+        tarefa = self._combo_tarefa.valor_atual()
+        nota = self._nota.toPlainText().strip()
 
         if not projeto:
             self._erro("Selecione um projeto.")
@@ -150,4 +152,5 @@ class EditarDialog(QDialog):
 
     def _erro(self, msg: str):
         from PySide6.QtWidgets import QMessageBox
+
         QMessageBox.warning(self, "Erro", msg)

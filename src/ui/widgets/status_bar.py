@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 StatusBar — barra de estado da janela principal.
 
@@ -11,16 +10,16 @@ O led (●) muda de cor via propriedade dinâmica Qt + QSS:
   QLabel#ledStatus[status="idle"]   -> cinza
   QLabel#ledStatus[status="active"] -> verde musgo
 """
+
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
 
 from PySide6.QtCore import Qt, QTimer
-from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QSizePolicy
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel
 
 from src.db.models import Apontamento
-from src.ui.style.tokens import ACCENT_TEXT, TEXT_MUTED, GREEN
+from src.ui.style.tokens import GREEN, TEXT_MUTED
 
 
 class StatusBar(QFrame):
@@ -38,8 +37,8 @@ class StatusBar(QFrame):
         self.setObjectName("panelStatus")
         self.setFixedHeight(56)
 
-        self._ativo: Optional[Apontamento] = None
-        self._inicio: Optional[datetime]   = None
+        self._ativo: Apontamento | None = None
+        self._inicio: datetime | None = None
 
         self._build_ui()
         self._timer = QTimer(self)
@@ -53,11 +52,11 @@ class StatusBar(QFrame):
 
     def set_ativo(self, apontamento: Apontamento):
         """Exibe estado ativo e inicia o contador de tempo."""
-        self._ativo  = apontamento
+        self._ativo = apontamento
         self._inicio = apontamento.inicio
 
         projeto = apontamento.projeto
-        tarefa  = apontamento.tarefa
+        tarefa = apontamento.tarefa
         # Trunca para caber na barra
         if len(projeto) > 60:
             projeto = projeto[:58] + "..."
@@ -66,15 +65,13 @@ class StatusBar(QFrame):
 
         self._set_led_status("active")
         self._label_contexto.setText(f"{projeto}\n{tarefa}")
-        self._label_contexto.setStyleSheet(
-            f"color: {GREEN}; font-size: 13px; font-weight: 600;"
-        )
+        self._label_contexto.setStyleSheet(f"color: {GREEN}; font-size: 13px; font-weight: 600;")
         self._tick()
         self._timer.start()
 
     def set_inativo(self):
         """Exibe estado inativo e para o contador."""
-        self._ativo  = None
+        self._ativo = None
         self._inicio = None
 
         self._timer.stop()
@@ -127,11 +124,11 @@ class StatusBar(QFrame):
         """Atualiza o tempo decorrido a cada segundo."""
         if self._inicio is None:
             return
-        delta   = datetime.now() - self._inicio
+        delta = datetime.now() - self._inicio
         total_s = int(delta.total_seconds())
-        h  = total_s // 3600
-        m  = (total_s % 3600) // 60
-        s  = total_s % 60
+        h = total_s // 3600
+        m = (total_s % 3600) // 60
+        s = total_s % 60
         tempo = f"{h}h {m:02d}min" if h > 0 else f"{m:02d}:{s:02d}"
         self._label_info.setText(f"{tempo}\nHoje: {self._total_hoje_str}")
 

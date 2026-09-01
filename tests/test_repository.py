@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Testes unitários — ApontamentoRepository (Fase 1)
 Roda com banco SQLite em memória, sem UI, sem PySide6.
@@ -7,26 +6,28 @@ Roda com banco SQLite em memória, sem UI, sem PySide6.
     pip install sqlalchemy pytest
     pytest tests/test_repository.py -v
 """
-import pytest
-from datetime import datetime, date, timedelta
+
+from datetime import date, datetime
 from pathlib import Path
 
 # Bootstrap: aponta para banco em memória antes de importar qualquer módulo db
 import sys
+
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from src.db.database import init_db, reset_engine_for_tests
 from src.db.repository import (
-    ApontamentoRepository,
     ApontamentoAtivoError,
     ApontamentoError,
+    ApontamentoRepository,
     HorarioInvalidoError,
     SobreposicaoError,
 )
-from src.db.models import Apontamento
-
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
+
 
 @pytest.fixture(autouse=True)
 def banco_em_memoria(tmp_path):
@@ -53,8 +54,8 @@ def hoje() -> date:
 
 # ── Iniciar / Parar ───────────────────────────────────────────────────────────
 
-class TestIniciarParar:
 
+class TestIniciarParar:
     def test_iniciar_basico(self, repo):
         apt = repo.iniciar("Projeto A", "Tarefa 1", dt(9))
         assert apt.id is not None
@@ -106,8 +107,8 @@ class TestIniciarParar:
 
 # ── Retroativo ────────────────────────────────────────────────────────────────
 
-class TestRetroativo:
 
+class TestRetroativo:
     def test_retroativo_basico(self, repo):
         apt = repo.registrar_retroativo("Proj A", "Tar 1", dt(9), dt(11))
         assert apt.fim == dt(11)
@@ -152,28 +153,28 @@ class TestRetroativo:
         repo.registrar_retroativo("P", "T", dt(11), dt(12))
         livres = repo.obter_intervalos_livres(hoje())
         # Deve ter: 00:00-09:00, 10:00-11:00, 12:00-23:59
-        horarios_inicio = [l[0].hour for l in livres]
+        horarios_inicio = [iv[0].hour for iv in livres]
         assert 10 in horarios_inicio  # buraco entre 10h e 11h
 
 
 # ── Dividir ───────────────────────────────────────────────────────────────────
 
-class TestDividir:
 
+class TestDividir:
     def test_dividir_basico(self, repo):
         apt = repo.registrar_retroativo("Proj", "Tar", dt(9), dt(12))
         p1, p2 = repo.dividir(apt.id, dt(10, 30))
 
         assert p1.inicio == dt(9)
-        assert p1.fim    == dt(10, 30)
+        assert p1.fim == dt(10, 30)
         assert p2.inicio == dt(10, 30)
-        assert p2.fim    == dt(12)
+        assert p2.fim == dt(12)
 
     def test_dividir_preserva_projeto_e_tarefa(self, repo):
         apt = repo.registrar_retroativo("Meu Projeto", "Minha Tarefa", dt(9), dt(12))
         p1, p2 = repo.dividir(apt.id, dt(10))
         assert p1.projeto == "Meu Projeto"
-        assert p2.tarefa  == "Minha Tarefa"
+        assert p2.tarefa == "Minha Tarefa"
 
     def test_dividir_preserva_nota(self, repo):
         apt = repo.registrar_retroativo("P", "T", dt(9), dt(12), nota="minha nota")
@@ -212,13 +213,13 @@ class TestDividir:
 
 # ── Edição ────────────────────────────────────────────────────────────────────
 
-class TestEdicao:
 
+class TestEdicao:
     def test_atualizar_projeto_tarefa(self, repo):
         apt = repo.registrar_retroativo("Antigo", "Tarefa Antiga", dt(9), dt(11))
         apt = repo.atualizar_projeto_tarefa(apt.id, "Novo Projeto", "Nova Tarefa")
         assert apt.projeto == "Novo Projeto"
-        assert apt.tarefa  == "Nova Tarefa"
+        assert apt.tarefa == "Nova Tarefa"
 
     def test_atualizar_projeto_registra_auditoria(self, repo):
         apt = repo.registrar_retroativo("Antigo", "T", dt(9), dt(11))
@@ -298,8 +299,8 @@ class TestAjusteIgnorandoSobreposicao:
 
 # ── Consultas ─────────────────────────────────────────────────────────────────
 
-class TestConsultas:
 
+class TestConsultas:
     def test_obter_por_dia(self, repo):
         repo.registrar_retroativo("P", "T1", dt(9, dia=25), dt(10, dia=25))
         repo.registrar_retroativo("P", "T2", dt(9, dia=26), dt(10, dia=26))
@@ -324,7 +325,7 @@ class TestConsultas:
 
     def test_buscar_por_texto(self, repo):
         repo.registrar_retroativo("Projeto Alpha", "Tarefa X", dt(9), dt(10))
-        repo.registrar_retroativo("Projeto Beta",  "Tarefa Y", dt(10), dt(11))
+        repo.registrar_retroativo("Projeto Beta", "Tarefa Y", dt(10), dt(11))
         resultados = repo.buscar(texto="alpha")
         assert len(resultados) == 1
         assert resultados[0].projeto == "Projeto Alpha"
@@ -337,8 +338,8 @@ class TestConsultas:
 
 # ── Auditoria ─────────────────────────────────────────────────────────────────
 
-class TestAuditoria:
 
+class TestAuditoria:
     def test_parar_registra_auditoria_fim(self, repo):
         apt = repo.iniciar("P", "T", dt(9))
         repo.parar(apt.id, dt(11))
@@ -357,8 +358,8 @@ class TestAuditoria:
 
 # ── Projetos/Tarefas ──────────────────────────────────────────────────────────
 
-class TestProjetosTarefas:
 
+class TestProjetosTarefas:
     def test_sincronizar_e_listar(self, repo):
         dados = [
             {"projeto": "Proj A", "tarefa": "Tar 1", "ativo": True},

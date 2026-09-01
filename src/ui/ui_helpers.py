@@ -1,12 +1,10 @@
-# -*- coding: utf-8 -*-
 """Utilitários de UI - PySide6"""
-from typing import Optional
 
 from PySide6.QtWidgets import QWidget
 from screeninfo import get_monitors
 
 
-def centralizar_janela(widget: QWidget, largura: Optional[int] = None, altura: Optional[int] = None):
+def centralizar_janela(widget: QWidget, largura: int | None = None, altura: int | None = None):
     """Centraliza widget (janela/diálogo) no monitor primário"""
     if largura is not None and altura is not None:
         widget.resize(largura, altura)
@@ -28,4 +26,4 @@ def truncar_texto(texto: str, max_length: int = 50) -> str:
     """Trunca texto adicionando reticências"""
     if len(texto) <= max_length:
         return texto
-    return texto[:max_length - 3] + "..."
+    return texto[: max_length - 3] + "..."

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 utils_dialogs.py — Diálogos utilitários genéricos de entrada de dados.
 
@@ -6,16 +5,21 @@ Funções:
     pedir_data()                   — seletor de data com QDateEdit
     selecionar_recurso_netproject() — combo editável para escolher recurso
 """
-from typing import List, Optional
 
 from PySide6.QtCore import QDate, Qt
 from PySide6.QtWidgets import (
-    QComboBox, QDateEdit, QDialog, QHBoxLayout,
-    QLabel, QPushButton, QVBoxLayout, QWidget,
+    QComboBox,
+    QDateEdit,
+    QDialog,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
 )
 
 
-def pedir_data(titulo: str = "Selecionar Data", parent: Optional[QWidget] = None) -> Optional[str]:
+def pedir_data(titulo: str = "Selecionar Data", parent: QWidget | None = None) -> str | None:
     dlg = QDialog(parent)
     dlg.setWindowTitle(titulo)
     dlg.setModal(True)
@@ -40,9 +44,7 @@ def pedir_data(titulo: str = "Selecionar Data", parent: Optional[QWidget] = None
     return resultado["data"]
 
 
-def selecionar_recurso_netproject(
-    recursos: List[str], parent: Optional[QWidget] = None
-) -> Optional[str]:
+def selecionar_recurso_netproject(recursos: list[str], parent: QWidget | None = None) -> str | None:
     """
     Diálogo para escolher o nome do recurso (usuário) no NetProject,
     usado para filtrar tarefas atribuídas a você nos XMLs.
@@ -80,6 +82,7 @@ def selecionar_recurso_netproject(
 
 
 # ── Helpers internos ──────────────────────────────────────────────────────────
+
 
 def _botoes(on_confirmar, on_cancelar) -> QHBoxLayout:
     row = QHBoxLayout()

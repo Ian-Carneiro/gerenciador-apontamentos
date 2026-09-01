@@ -4,3 +4,4 @@ logs
 **/__pycache__/**
 .env
 data/**
+gerenciador_apontamentos.egg-info

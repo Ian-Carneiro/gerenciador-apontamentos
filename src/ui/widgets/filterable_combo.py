@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 FilterableComboBox — campo editável com dropdown via QFrame(Qt.Popup).
 
@@ -12,16 +11,23 @@ Dois níveis de filtragem:
   1. Pai→filho : _visiveis = subconjunto de _todos filtrado pelo pai
   2. Digitação : subconjunto de _visiveis que bate com o texto (sem acento)
 """
+
 from __future__ import annotations
 
 import unicodedata
-from typing import Optional
 
-from PySide6.QtCore import Qt, Signal, QTimer, QEvent
+from PySide6.QtCore import QEvent, Qt, QTimer, Signal
 from PySide6.QtWidgets import (
-    QFrame, QHBoxLayout, QLabel, QLineEdit,
-    QPushButton, QScrollArea, QSizePolicy,
-    QVBoxLayout, QWidget, QApplication
+    QApplication,
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QScrollArea,
+    QSizePolicy,
+    QVBoxLayout,
+    QWidget,
 )
 
 
@@ -32,6 +38,7 @@ def _norm(texto: str) -> str:
 
 
 # ── Dropdown popup ────────────────────────────────────────────────────────────
+
 
 class _DropdownPopup(QFrame):
     """
@@ -47,7 +54,7 @@ class _DropdownPopup(QFrame):
         super().__init__(
             parent,
             Qt.WindowType.Tool | Qt.WindowType.FramelessWindowHint,
-            )
+        )
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating, True)
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.setObjectName("dropdown")
@@ -106,7 +113,9 @@ class _DropdownPopup(QFrame):
 
         # Largura do item mais longo (+ padding horizontal do QSS + margens do popup)
         maior_texto = max((fm.horizontalAdvance(v) for v in itens), default=0)
-        self._largura_conteudo = maior_texto + 24 + 8 + 5  # padding 12+12 + margens 4+4 + folga scrollbar
+        self._largura_conteudo = (
+            maior_texto + 24 + 8 + 5
+        )  # padding 12+12 + margens 4+4 + folga scrollbar
 
     def posicionar(self, largura: int):
         largura_final = max(largura, self._largura_conteudo, 200)
@@ -122,9 +131,7 @@ class _DropdownPopup(QFrame):
         if event.type() == QEvent.Type.MouseButtonPress:
             pos = event.globalPosition().toPoint()
             dentro_popup = self.geometry().contains(pos)
-            dentro_combo = self._parent_combo.rect().contains(
-                self._parent_combo.mapFromGlobal(pos)
-            )
+            dentro_combo = self._parent_combo.rect().contains(self._parent_combo.mapFromGlobal(pos))
             if not dentro_popup and not dentro_combo:
                 self.close()
         return super().eventFilter(obj, event)
@@ -132,6 +139,7 @@ class _DropdownPopup(QFrame):
     def closeEvent(self, event):
         QApplication.instance().removeEventFilter(self)
         super().closeEvent(event)
+
 
 # ── FilterableComboBox ────────────────────────────────────────────────────────
 
@@ -152,11 +160,11 @@ class FilterableComboBox(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.setMinimumHeight(36)
 
-        self._todos:    list[str] = []
+        self._todos: list[str] = []
         self._visiveis: list[str] = []
         self._dados_por_pai: dict[str, list[str]] = {}
-        self._combo_pai: Optional["FilterableComboBox"] = None
-        self._popup: Optional[_DropdownPopup] = None
+        self._combo_pai: FilterableComboBox | None = None
+        self._popup: _DropdownPopup | None = None
 
         self._build_ui(placeholder)
 
@@ -198,7 +206,7 @@ class FilterableComboBox(QWidget):
     # ── API pública ───────────────────────────────────────────────────────────
 
     def set_dados(self, itens: list[str]):
-        self._todos    = sorted(set(itens))
+        self._todos = sorted(set(itens))
         self._visiveis = list(self._todos)
 
     def set_dados_por_pai(
@@ -206,7 +214,7 @@ class FilterableComboBox(QWidget):
         dados: list[dict],
         campo_proprio: str,
         campo_pai: str,
-        combo_pai: "FilterableComboBox",
+        combo_pai: FilterableComboBox,
     ):
         self._combo_pai = combo_pai
         self._dados_por_pai = {}
@@ -216,7 +224,7 @@ class FilterableComboBox(QWidget):
             tv = d.get(campo_proprio, "")
             self._dados_por_pai.setdefault(pv, []).append(tv)
             todos.add(tv)
-        self._todos    = sorted(todos)
+        self._todos = sorted(todos)
         self._visiveis = list(self._todos)
         combo_pai.valor_selecionado.connect(self._ao_pai_mudar)
         self._atualizar_por_pai(combo_pai.valor_atual())
@@ -235,7 +243,7 @@ class FilterableComboBox(QWidget):
         self._fechar_dropdown()
 
     def atualizar_dados(self, dados_dicts: list[dict], campo: str):
-        itens = sorted(set(d[campo] for d in dados_dicts if campo in d))
+        itens = sorted({d[campo] for d in dados_dicts if campo in d})
         self.set_dados(itens)
 
     def setFocus(self):
@@ -243,18 +251,23 @@ class FilterableComboBox(QWidget):
 
     def adicionar_valor(self, valor: str):
         if valor not in self._todos:
-            self._todos.append(valor); self._todos.sort()
+            self._todos.append(valor)
+            self._todos.sort()
         if valor not in self._visiveis:
-            self._visiveis.append(valor); self._visiveis.sort()
+            self._visiveis.append(valor)
+            self._visiveis.sort()
 
     def adicionar_par(self, pai: str, valor: str):
         if valor not in self._todos:
-            self._todos.append(valor); self._todos.sort()
+            self._todos.append(valor)
+            self._todos.sort()
         lst = self._dados_por_pai.setdefault(pai, [])
         if valor not in lst:
-            lst.append(valor); lst.sort()
+            lst.append(valor)
+            lst.sort()
         if self._combo_pai and self._combo_pai.valor_atual() == pai and valor not in self._visiveis:
-            self._visiveis.append(valor); self._visiveis.sort()
+            self._visiveis.append(valor)
+            self._visiveis.sort()
 
     # ── Dropdown ──────────────────────────────────────────────────────────────
 
@@ -267,7 +280,7 @@ class FilterableComboBox(QWidget):
     def _mostrar_dropdown(self):
         texto = self._edit.text().strip()
         if texto:
-            norm  = _norm(texto)
+            norm = _norm(texto)
             itens = [v for v in self._visiveis if norm in _norm(v)]
         else:
             itens = list(self._visiveis)
@@ -305,25 +318,27 @@ class FilterableComboBox(QWidget):
     def eventFilter(self, obj, event):
         """Fecha dropdown ao pressionar Escape; confirma com Enter/Tab."""
         from PySide6.QtCore import QEvent
+
         if obj is self._edit:
-            if event.type() == QEvent.Type.MouseButtonPress:
-                if not (self._popup and self._popup.isVisible()):
-                    self._mostrar_dropdown()
+            if event.type() == QEvent.Type.MouseButtonPress and not (
+                self._popup and self._popup.isVisible()
+            ):
+                self._mostrar_dropdown()
             if event.type() == QEvent.Type.KeyPress:
                 key = event.key()
                 if key == Qt.Key.Key_Escape:
                     self._fechar_dropdown()
                     return True
-                if key in (Qt.Key.Key_Return, Qt.Key.Key_Enter, Qt.Key.Key_Tab):
-                    # Confirma o primeiro item visível se houver match
-                    if self._popup and self._popup.isVisible():
-                        texto = self.valor_atual()
-                        for v in self._visiveis:
-                            if not texto or _norm(texto) in _norm(v):
-                                self._ao_selecionar(v)
-                                if key == Qt.Key.Key_Tab:
-                                    self.focusNextChild()
-                                return True
+                if key in (Qt.Key.Key_Return, Qt.Key.Key_Enter, Qt.Key.Key_Tab) and (
+                    self._popup and self._popup.isVisible()
+                ):
+                    texto = self.valor_atual()
+                    for v in self._visiveis:
+                        if not texto or _norm(texto) in _norm(v):
+                            self._ao_selecionar(v)
+                            if key == Qt.Key.Key_Tab:
+                                self.focusNextChild()
+                            return True
         return super().eventFilter(obj, event)
 
     # ── Pai→filho ─────────────────────────────────────────────────────────────

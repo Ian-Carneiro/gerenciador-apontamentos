@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Configuração do Engine SQLAlchemy e fábrica de sessões.
 
@@ -9,12 +8,13 @@ Uso:
     with get_session() as session:
         apontamentos = session.scalars(select(Apontamento)).all()
 """
+
 from __future__ import annotations
 
-import sys
+from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Generator
+import sys
 
 from sqlalchemy import create_engine, event, text
 from sqlalchemy.engine import Engine
@@ -24,10 +24,12 @@ from src.db.models import Base
 
 # ── Localização do banco ───────────────────────────────────────────────────────
 
+
 def _db_path() -> Path:
     """Retorna o caminho do arquivo SQLite baseado em config.py (se disponível)."""
     try:
         import config
+
         db_path = config.DATA_DIR / "apontamentos.db"
     except ImportError:
         # Fallback para testes ou execução isolada
@@ -64,13 +66,14 @@ def _get_engine(db_path: Path | None = None) -> Engine:
 
 def _configure_sqlite(engine: Engine) -> None:
     """Aplica PRAGMAs de performance e integridade no SQLite."""
+
     @event.listens_for(engine, "connect")
     def set_pragmas(dbapi_conn, _connection_record):
         cursor = dbapi_conn.cursor()
-        cursor.execute("PRAGMA journal_mode=WAL")    # WAL: melhor concorrência
-        cursor.execute("PRAGMA foreign_keys=ON")      # Integridade referencial
-        cursor.execute("PRAGMA synchronous=NORMAL")   # Equilíbrio performance/segurança
-        cursor.execute("PRAGMA cache_size=-32000")    # 32MB cache
+        cursor.execute("PRAGMA journal_mode=WAL")  # WAL: melhor concorrência
+        cursor.execute("PRAGMA foreign_keys=ON")  # Integridade referencial
+        cursor.execute("PRAGMA synchronous=NORMAL")  # Equilíbrio performance/segurança
+        cursor.execute("PRAGMA cache_size=-32000")  # 32MB cache
         cursor.close()
 
 
@@ -82,6 +85,7 @@ def _get_session_factory() -> sessionmaker:
 
 
 # ── API pública ───────────────────────────────────────────────────────────────
+
 
 def init_db(db_path: Path | None = None) -> None:
     """
@@ -96,18 +100,13 @@ def init_db(db_path: Path | None = None) -> None:
 def _apply_indexes(engine: Engine) -> None:
     """Cria índices de performance que não estão no ORM."""
     with engine.connect() as conn:
-        conn.execute(text(
-            "CREATE INDEX IF NOT EXISTS ix_apt_inicio "
-            "ON apontamentos(inicio DESC)"
-        ))
-        conn.execute(text(
-            "CREATE INDEX IF NOT EXISTS ix_apt_projeto "
-            "ON apontamentos(projeto)"
-        ))
-        conn.execute(text(
-            "CREATE INDEX IF NOT EXISTS ix_apt_fim_null "
-            "ON apontamentos(fim) WHERE fim IS NULL"
-        ))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS ix_apt_inicio ON apontamentos(inicio DESC)"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS ix_apt_projeto ON apontamentos(projeto)"))
+        conn.execute(
+            text(
+                "CREATE INDEX IF NOT EXISTS ix_apt_fim_null ON apontamentos(fim) WHERE fim IS NULL"
+            )
+        )
         conn.commit()
 
 

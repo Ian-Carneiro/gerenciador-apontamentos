@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 HoraField — widget reutilizável de entrada de horário HH:MM:SS.
 
@@ -10,26 +9,24 @@ Uso:
     campo.set_valor(datetime.now())
     dt = campo.valor()   # datetime ou None se inválido
 """
+
 from __future__ import annotations
 
-from datetime import datetime, date
-from typing import Optional
+from datetime import date, datetime
 
-from PySide6.QtCore import Qt, QRegularExpression
+from PySide6.QtCore import QRegularExpression, Qt
 from PySide6.QtGui import QRegularExpressionValidator
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QLineEdit, QWidget
 
-
 # ── Helpers (também importáveis diretamente) ───────────────────────────────────
+
 
 def hora_validator() -> QRegularExpressionValidator:
     """Aceita HH:MM:SS (00:00:00 – 23:59:59)."""
-    return QRegularExpressionValidator(
-        QRegularExpression(r"^([01]\d|2[0-3]):[0-5]\d:[0-5]\d$")
-    )
+    return QRegularExpressionValidator(QRegularExpression(r"^([01]\d|2[0-3]):[0-5]\d:[0-5]\d$"))
 
 
-def parse_hora(texto: str, data_base: Optional[date] = None) -> Optional[datetime]:
+def parse_hora(texto: str, data_base: date | None = None) -> datetime | None:
     """Converte 'HH:MM:SS' para datetime na data_base (ou hoje, se omitida)."""
     try:
         t = datetime.strptime(texto.strip(), "%H:%M:%S")
@@ -40,6 +37,7 @@ def parse_hora(texto: str, data_base: Optional[date] = None) -> Optional[datetim
 
 
 # ── Widget ────────────────────────────────────────────────────────────────────
+
 
 class HoraField(QWidget):
     """Label + QLineEdit monospace para um horário HH:MM:SS."""
@@ -65,7 +63,7 @@ class HoraField(QWidget):
 
     # ── API pública ───────────────────────────────────────────────────────────
 
-    def valor(self, data_base: Optional[date] = None) -> Optional[datetime]:
+    def valor(self, data_base: date | None = None) -> datetime | None:
         """Retorna datetime na data_base (ou hoje) com o horário digitado, ou None."""
         return parse_hora(self.edit.text(), data_base)
 
@@ -75,7 +73,7 @@ class HoraField(QWidget):
     def set_valor(self, dt: datetime):
         self.edit.setText(dt.strftime("%H:%M:%S"))
 
-    def setEnabled(self, enabled: bool):  # noqa: N802
+    def setEnabled(self, enabled: bool):
         super().setEnabled(enabled)
         self.edit.setEnabled(enabled)
 
@@ -88,11 +86,7 @@ class HoraField(QWidget):
         if len(apenas_digitos) >= 3:
             formatado = apenas_digitos[:2] + ":" + apenas_digitos[2:]
         if len(apenas_digitos) >= 5:
-            formatado = (
-                apenas_digitos[:2] + ":" +
-                apenas_digitos[2:4] + ":" +
-                apenas_digitos[4:]
-            )
+            formatado = apenas_digitos[:2] + ":" + apenas_digitos[2:4] + ":" + apenas_digitos[4:]
         if formatado != texto:
             self.edit.blockSignals(True)
             self.edit.setText(formatado)

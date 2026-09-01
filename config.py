@@ -1,12 +1,13 @@
-# -*- coding: utf-8 -*-
 """Configuração centralizada da aplicação"""
+
 import os
-import sys
 from pathlib import Path
+import sys
+
 from dotenv import load_dotenv
 
 # Obtém o diretório do executável ou script
-if getattr(sys, 'frozen', False):
+if getattr(sys, "frozen", False):
     DIR_BASE = Path(os.path.dirname(sys.executable))
 else:
     DIR_BASE = Path(os.path.dirname(os.path.abspath(__file__)))
@@ -39,12 +40,14 @@ SGIWEB_PASS = os.getenv("SGI_WEB_LOGIN_SENHA", "")
 
 # Chrome/Selenium
 CHROME_BINARY = os.getenv("CHROME_BINARY", RESOURCES_DIR / "chrome-linux64/chrome")
-CHROMEDRIVER_PATH = os.getenv("CHROMEDRIVER_PATH", RESOURCES_DIR / "chromedriver-linux64/chromedriver")
+CHROMEDRIVER_PATH = os.getenv(
+    "CHROMEDRIVER_PATH", RESOURCES_DIR / "chromedriver-linux64/chromedriver"
+)
 
 # Timeouts
 TIMEOUT_CURTO = 0.5
 TIMEOUT_MEDIO = 2.0
-TIMEOUT_LONGO = 5.0
+TIMEOUT_LONGO = 10.0
 SELENIUM_IMPLICIT_WAIT = 5
 
 # Logging

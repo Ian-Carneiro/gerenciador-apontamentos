@@ -1,14 +1,21 @@
-# -*- coding: utf-8 -*-
 """Automação SGIWeb - Playwright, desacoplada de UI"""
+
+from collections.abc import Callable
 from datetime import datetime
-from typing import Callable, List, Optional
+from itertools import pairwise
 
 from playwright.sync_api import sync_playwright
 
 import config
 from src.core.credentials_validator import CredentialsValidator
 from src.utils.logger import get_logger
-from .exceptions import AutomacaoError, CredenciaisInvalidasError, NenhumApontamentoError, SobrescritaCanceladaError
+
+from .exceptions import (
+    AutomacaoError,
+    CredenciaisInvalidasError,
+    NenhumApontamentoError,
+    SobrescritaCanceladaError,
+)
 from .page_base import BrowserManager
 from .sgiweb_pages import SGIWebLoginPage, SGIWebMarcacaoPage
 
@@ -21,7 +28,7 @@ class AutomacaoSGIWeb:
     def __init__(self, repo):
         self.repo = repo
 
-    def obter_horarios_dia(self, data_str: str) -> List[str]:
+    def obter_horarios_dia(self, data_str: str) -> list[str]:
         """
         Retorna horários (entrada/saída) do dia via SQLite.
 
@@ -36,7 +43,7 @@ class AutomacaoSGIWeb:
 
         horarios = [apts[0].inicio]
 
-        for anterior, atual in zip(apts, apts[1:]):
+        for anterior, atual in pairwise(apts):
             if anterior.fim and atual.inicio != anterior.fim:
                 horarios.append(anterior.fim)
                 horarios.append(atual.inicio)
@@ -51,9 +58,9 @@ class AutomacaoSGIWeb:
 
     def enviar(
         self,
-        horarios: List[str],
+        horarios: list[str],
         data_str: str,
-        confirmar_sobrescrita: Optional[Callable[[], bool]] = None,
+        confirmar_sobrescrita: Callable[[], bool] | None = None,
     ) -> None:
         """
         Executa a automação no SGIWeb (login, preenchimento, envio).
@@ -83,9 +90,10 @@ class AutomacaoSGIWeb:
                 marcacao_page = SGIWebMarcacaoPage(page)
                 marcacao_page.ir_para_marcacao()
 
-                if marcacao_page.verificar_data_preenchida(data_str):
-                    if not confirmar_sobrescrita or not confirmar_sobrescrita():
-                        raise SobrescritaCanceladaError(data_str)
+                if marcacao_page.verificar_data_preenchida(data_str) and (
+                    not confirmar_sobrescrita or not confirmar_sobrescrita()
+                ):
+                    raise SobrescritaCanceladaError(data_str)
 
                 linha = marcacao_page.obter_linha_apontamento(data_str)
                 if not linha:

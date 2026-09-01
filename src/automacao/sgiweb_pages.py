@@ -1,10 +1,11 @@
-# -*- coding: utf-8 -*-
 """Page Objects para SGIWeb - PLAYWRIGHT"""
+
 from datetime import datetime
 import re
 
 import config
 from src.utils.logger import get_logger
+
 from .page_base import BasePage
 
 logger = get_logger(__name__)
@@ -95,6 +96,7 @@ class SGIWebMarcacaoPage(BasePage):
             return False
 
         self.page.reload()
+        self.sleep(5)
         logger.info("✅ Apontamentos enviados com sucesso")
         return True
 

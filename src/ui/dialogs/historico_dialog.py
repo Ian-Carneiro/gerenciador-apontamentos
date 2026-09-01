@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 HistoricoDialog — Histórico de apontamentos com edição inline.
 
@@ -21,49 +20,54 @@ Implementação:
   - Blocos agrupados por dia com linha de total entre eles
   - Botões de ação por apontamento via setCellWidget
 """
+
 from __future__ import annotations
 
-from datetime import date
-from typing import Optional
-
-from PySide6.QtCore import Qt, QSize
-from PySide6.QtGui import QColor, QBrush, QFont
+from PySide6.QtCore import QSize, Qt
+from PySide6.QtGui import QBrush, QColor, QFont, QIcon
 from PySide6.QtWidgets import (
-    QDialog, QHBoxLayout, QHeaderView, QLabel,
-    QMessageBox, QPushButton, QSizePolicy,
-    QTableWidget, QTableWidgetItem, QVBoxLayout,
-    QWidget, QFrame, QAbstractItemView,
+    QAbstractItemView,
+    QDialog,
+    QFrame,
+    QHBoxLayout,
+    QHeaderView,
+    QLabel,
+    QMessageBox,
+    QPushButton,
+    QTableWidget,
+    QTableWidgetItem,
+    QVBoxLayout,
+    QWidget,
 )
-from PySide6.QtGui import QIcon
 
 from src.core.apontamento_service import ApontamentoService
 from src.db.models import Apontamento
-from src.db.repository import BlocoHistorico, ApontamentoError
+from src.db.repository import BlocoHistorico
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 # -- Constantes de coluna ------------------------------------------------------
-COL_DATA    = 0
+COL_DATA = 0
 COL_PROJETO = 1
-COL_TAREFA  = 2
-COL_INICIO  = 3
-COL_FIM     = 4
-COL_HORAS   = 5
-COL_ACOES   = 6
-N_COLUNAS   = 7
+COL_TAREFA = 2
+COL_INICIO = 3
+COL_FIM = 4
+COL_HORAS = 5
+COL_ACOES = 6
+N_COLUNAS = 7
 
 CABECALHOS = ["Data", "Projeto", "Tarefa", "Início", "Fim", "Horas", "Ações"]
 
 # -- Cores --------------------------------------------------------------------─
-COR_BG_PAR    = QColor("#1A1D27")
-COR_BG_IMPAR  = QColor("#1E2235")
-COR_BG_TOTAL  = QColor("#131620")
-COR_TEXTO     = QColor("#E8EAF0")
-COR_MUTED     = QColor("#8B90A0")
-COR_VERDE     = QColor("#7EC99A")
-COR_VERMELHO  = QColor("#C0392B")
-COR_ACENTO    = QColor("#4D7C5F")
+COR_BG_PAR = QColor("#1A1D27")
+COR_BG_IMPAR = QColor("#1E2235")
+COR_BG_TOTAL = QColor("#131620")
+COR_TEXTO = QColor("#E8EAF0")
+COR_MUTED = QColor("#8B90A0")
+COR_VERDE = QColor("#7EC99A")
+COR_VERMELHO = QColor("#C0392B")
+COR_ACENTO = QColor("#4D7C5F")
 
 SVG_NOTA = """
 <svg xmlns="http://www.w3.org/2000/svg"
@@ -81,16 +85,22 @@ SVG_NOTA = """
 </svg>
 """
 
+
 def _icone_nota() -> QIcon:
     from PySide6.QtGui import QPixmap
+
     pixmap = QPixmap()
     pixmap.loadFromData(SVG_NOTA.encode("utf-8"), "SVG")
     return QIcon(pixmap)
 
-def _item(texto: str, cor_bg: QColor = COR_BG_PAR,
-          cor_txt: QColor = COR_TEXTO,
-          negrito: bool = False,
-          alinhamento=Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter) -> QTableWidgetItem:
+
+def _item(
+    texto: str,
+    cor_bg: QColor = COR_BG_PAR,
+    cor_txt: QColor = COR_TEXTO,
+    negrito: bool = False,
+    alinhamento=Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+) -> QTableWidgetItem:
     """Cria QTableWidgetItem pré-configurado."""
     it = QTableWidgetItem(texto)
     it.setBackground(QBrush(cor_bg))
@@ -104,12 +114,17 @@ def _item(texto: str, cor_bg: QColor = COR_BG_PAR,
     return it
 
 
-def _item_mono(texto: str, cor_bg: QColor = COR_BG_PAR,
-               cor_txt: QColor = COR_TEXTO) -> QTableWidgetItem:
+def _item_mono(
+    texto: str, cor_bg: QColor = COR_BG_PAR, cor_txt: QColor = COR_TEXTO
+) -> QTableWidgetItem:
     """Item com fonte monoespaçada (para horários)."""
-    it = _item(texto, cor_bg, cor_txt,
-               alinhamento=Qt.AlignmentFlag.AlignCenter | Qt.AlignmentFlag.AlignVCenter)
-    f  = QFont("JetBrains Mono, Consolas, monospace")
+    it = _item(
+        texto,
+        cor_bg,
+        cor_txt,
+        alinhamento=Qt.AlignmentFlag.AlignCenter | Qt.AlignmentFlag.AlignVCenter,
+    )
+    f = QFont("JetBrains Mono, Consolas, monospace")
     f.setPointSize(10)
     it.setFont(f)
     return it
@@ -215,12 +230,7 @@ class _BotoesAcao(QWidget):
     </svg>
     """
 
-    def __init__(
-        self,
-        apontamento: Apontamento,
-        dialog: "HistoricoDialog",
-        parent=None
-    ):
+    def __init__(self, apontamento: Apontamento, dialog: HistoricoDialog, parent=None):
         super().__init__(parent)
 
         self._apt = apontamento
@@ -230,25 +240,14 @@ class _BotoesAcao(QWidget):
         layout.setContentsMargins(6, 2, 6, 2)
         layout.setSpacing(4)
 
-        self._btn_editar = self._btn(
-            self._icon(self.SVG_EDITAR),
-            "Editar projeto/tarefa/nota"
-        )
+        self._btn_editar = self._btn(self._icon(self.SVG_EDITAR), "Editar projeto/tarefa/nota")
 
-        self._btn_ajustar = self._btn(
-            self._icon(self.SVG_RELOGIO),
-            "Ajustar horário"
-        )
+        self._btn_ajustar = self._btn(self._icon(self.SVG_RELOGIO), "Ajustar horário")
 
-        self._btn_dividir = self._btn(
-            self._icon(self.SVG_DIVIDIR),
-            "Dividir apontamento"
-        )
+        self._btn_dividir = self._btn(self._icon(self.SVG_DIVIDIR), "Dividir apontamento")
 
         self._btn_deletar = self._btn(
-            self._icon(self.SVG_LIXEIRA),
-            "Deletar apontamento",
-            object_name="btnDel"
+            self._icon(self.SVG_LIXEIRA), "Deletar apontamento", object_name="btnDel"
         )
 
         layout.addWidget(self._btn_editar)
@@ -265,9 +264,7 @@ class _BotoesAcao(QWidget):
         self._btn_dividir.setEnabled(apontamento.fim is not None)
 
         self._btn_dividir.setToolTip(
-            "Dividir apontamento"
-            if apontamento.fim
-            else "Finalize o apontamento para dividir"
+            "Dividir apontamento" if apontamento.fim else "Finalize o apontamento para dividir"
         )
 
         # --------------------------------------------------------------
@@ -293,10 +290,7 @@ class _BotoesAcao(QWidget):
 
         pixmap = QPixmap()
 
-        if not pixmap.loadFromData(
-            svg.encode("utf-8"),
-            "SVG"
-        ):
+        if not pixmap.loadFromData(svg.encode("utf-8"), "SVG"):
             raise ValueError("Não foi possível carregar o SVG do ícone.")
 
         return QIcon(pixmap)
@@ -320,11 +314,7 @@ class _BotoesAcao(QWidget):
     def _on_editar(self):
         from src.ui.dialogs.editar_dialog import EditarDialog
 
-        dlg = EditarDialog(
-            self._apt,
-            self._dialog._svc,
-            parent=self._dialog
-        )
+        dlg = EditarDialog(self._apt, self._dialog._svc, parent=self._dialog)
 
         if dlg.exec() == EditarDialog.DialogCode.Accepted:
             self._dialog.recarregar()
@@ -336,7 +326,7 @@ class _BotoesAcao(QWidget):
             self._apt,
             self._dialog._svc,
             eh_ultimo=(self._apt.id == self._dialog._ultimo_apt_id),
-            parent=self._dialog
+            parent=self._dialog,
         )
 
         if dlg.exec() == AjustarHorarioDialog.DialogCode.Accepted:
@@ -346,21 +336,13 @@ class _BotoesAcao(QWidget):
         from src.ui.dialogs.dividir_dialog import DividirDialog
 
         try:
-            dlg = DividirDialog(
-                self._apt,
-                self._dialog._svc,
-                parent=self._dialog
-            )
+            dlg = DividirDialog(self._apt, self._dialog._svc, parent=self._dialog)
 
             if dlg.exec() == DividirDialog.DialogCode.Accepted:
                 self._dialog.recarregar()
 
         except ValueError as e:
-            QMessageBox.warning(
-                self._dialog,
-                "Erro",
-                str(e)
-            )
+            QMessageBox.warning(self._dialog, "Erro", str(e))
 
     def _on_deletar(self):
         resp = QMessageBox.question(
@@ -371,22 +353,20 @@ class _BotoesAcao(QWidget):
             f"  {self._apt.inicio.strftime('%H:%M')} - "
             f"{self._apt.fim.strftime('%H:%M') if self._apt.fim else '...'}\n\n"
             f"Esta ação não pode ser desfeita.",
-            QMessageBox.StandardButton.Yes
-            | QMessageBox.StandardButton.Cancel,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel,
             QMessageBox.StandardButton.Cancel,
         )
 
         if resp == QMessageBox.StandardButton.Yes:
             self._dialog._svc.deletar(self._apt.id)
 
-            logger.info(
-                f"Deletado id={self._apt.id} via historico"
-            )
+            logger.info(f"Deletado id={self._apt.id} via historico")
 
             self._dialog.recarregar()
 
 
 # -- HistoricoDialog ----------------------------------------------------------─
+
 
 class HistoricoDialog(QDialog):
     """
@@ -446,20 +426,19 @@ class HistoricoDialog(QDialog):
         self._tabela.setAlternatingRowColors(False)
         self._tabela.horizontalHeader().setHighlightSections(False)
 
-
         # Larguras das colunas
         hh = self._tabela.horizontalHeader()
-        hh.setSectionResizeMode(COL_DATA,    QHeaderView.ResizeMode.ResizeToContents)
+        hh.setSectionResizeMode(COL_DATA, QHeaderView.ResizeMode.ResizeToContents)
         hh.setSectionResizeMode(COL_PROJETO, QHeaderView.ResizeMode.Interactive)
-        hh.setSectionResizeMode(COL_TAREFA,  QHeaderView.ResizeMode.Stretch)
-        hh.setSectionResizeMode(COL_INICIO,  QHeaderView.ResizeMode.ResizeToContents)
-        hh.setSectionResizeMode(COL_FIM,     QHeaderView.ResizeMode.ResizeToContents)
-        hh.setSectionResizeMode(COL_HORAS,   QHeaderView.ResizeMode.ResizeToContents)
-        hh.setSectionResizeMode(COL_ACOES,   QHeaderView.ResizeMode.Fixed)
+        hh.setSectionResizeMode(COL_TAREFA, QHeaderView.ResizeMode.Stretch)
+        hh.setSectionResizeMode(COL_INICIO, QHeaderView.ResizeMode.ResizeToContents)
+        hh.setSectionResizeMode(COL_FIM, QHeaderView.ResizeMode.ResizeToContents)
+        hh.setSectionResizeMode(COL_HORAS, QHeaderView.ResizeMode.ResizeToContents)
+        hh.setSectionResizeMode(COL_ACOES, QHeaderView.ResizeMode.Fixed)
         # Larguras iniciais — usuário pode redimensionar livremente
         self._tabela.setColumnWidth(COL_PROJETO, 280)
-        self._tabela.setColumnWidth(COL_TAREFA,  320)
-        self._tabela.setColumnWidth(COL_ACOES,   160)
+        self._tabela.setColumnWidth(COL_TAREFA, 320)
+        self._tabela.setColumnWidth(COL_ACOES, 160)
         hh.setMinimumSectionSize(60)
         hh.setStretchLastSection(False)
 
@@ -489,8 +468,7 @@ class HistoricoDialog(QDialog):
 
         if not blocos:
             self._tabela.setRowCount(1)
-            it = _item("Nenhum apontamento registrado ainda.",
-                        cor_txt=COR_MUTED)
+            it = _item("Nenhum apontamento registrado ainda.", cor_txt=COR_MUTED)
             it.setFlags(Qt.ItemFlag.ItemIsEnabled)
             self._tabela.setItem(0, 0, it)
             self._tabela.setSpan(0, 0, 1, N_COLUNAS)
@@ -498,7 +476,6 @@ class HistoricoDialog(QDialog):
             return
 
         total_geral = 0.0
-        linha_idx = 0
         par = True
 
         # Coleta todas as linhas primeiro, depois popula
@@ -522,12 +499,12 @@ class HistoricoDialog(QDialog):
 
                 self._tabela.setRowHeight(i, 42)
 
-                data_str  = apt.inicio.strftime("%d/%m")
-                ini_str   = apt.inicio.strftime("%H:%M:%S")
-                fim_str   = apt.fim.strftime("%H:%M:%S") if apt.fim else "..."
+                data_str = apt.inicio.strftime("%d/%m")
+                ini_str = apt.inicio.strftime("%H:%M:%S")
+                fim_str = apt.fim.strftime("%H:%M:%S") if apt.fim else "..."
                 horas_str = apt.duracao_str if apt.fim else "em exec."
 
-                self._tabela.setItem(i, COL_DATA,    _item(data_str, cor_bg, COR_MUTED))
+                self._tabela.setItem(i, COL_DATA, _item(data_str, cor_bg, COR_MUTED))
                 self._tabela.setItem(i, COL_PROJETO, _item(apt.projeto, cor_bg))
 
                 item_tarefa = _item(apt.tarefa, cor_bg, COR_MUTED)
@@ -536,13 +513,21 @@ class HistoricoDialog(QDialog):
                     item_tarefa.setToolTip(apt.nota)
                 self._tabela.setItem(i, COL_TAREFA, item_tarefa)
 
-                self._tabela.setItem(i, COL_INICIO,  _item_mono(ini_str, cor_bg))
-                self._tabela.setItem(i, COL_FIM,
-                    _item_mono(fim_str, cor_bg, COR_VERDE if apt.fim else COR_MUTED))
-                self._tabela.setItem(i, COL_HORAS,
-                    _item(horas_str, cor_bg, COR_VERDE if apt.fim else COR_MUTED,
-                          negrito=True,
-                          alinhamento=Qt.AlignmentFlag.AlignCenter | Qt.AlignmentFlag.AlignVCenter))
+                self._tabela.setItem(i, COL_INICIO, _item_mono(ini_str, cor_bg))
+                self._tabela.setItem(
+                    i, COL_FIM, _item_mono(fim_str, cor_bg, COR_VERDE if apt.fim else COR_MUTED)
+                )
+                self._tabela.setItem(
+                    i,
+                    COL_HORAS,
+                    _item(
+                        horas_str,
+                        cor_bg,
+                        COR_VERDE if apt.fim else COR_MUTED,
+                        negrito=True,
+                        alinhamento=Qt.AlignmentFlag.AlignCenter | Qt.AlignmentFlag.AlignVCenter,
+                    ),
+                )
 
             else:
                 bloco = dado

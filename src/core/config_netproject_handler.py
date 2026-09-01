@@ -1,9 +1,7 @@
-# -*- coding: utf-8 -*-
 """Gerenciador centralizado de Configurações NetProject - REFATORADO"""
+
 import json
-from functools import lru_cache
 from pathlib import Path
-from typing import Dict
 
 import config
 from src.utils.logger import get_logger
@@ -40,16 +38,13 @@ class ConfigNetProjectHandler:
             self._criar_arquivo_padrao(arquivo_config)
 
         try:
-            with open(arquivo_config, 'r', encoding='utf-8') as f:
+            with open(arquivo_config, encoding="utf-8") as f:
                 dados = json.load(f)
 
-                self._projetos_netproject = dados.get('projetos_netproject', {})
-                depara = dados.get('depara', {})
-                self._depara_projetos = depara.get('projetos', {})
-                self._depara_tarefas = depara.get('tarefas', {})
-
-            # Limpa cache ao recarregar
-            self._limpar_cache()
+                self._projetos_netproject = dados.get("projetos_netproject", {})
+                depara = dados.get("depara", {})
+                self._depara_projetos = depara.get("projetos", {})
+                self._depara_tarefas = depara.get("tarefas", {})
 
             total_depara = len(self._depara_projetos) + len(self._depara_tarefas)
             logger.info(f"📋 {len(self._projetos_netproject)} projetos NetProject carregados")
@@ -69,11 +64,10 @@ class ConfigNetProjectHandler:
             "evolucao": 263719,
             "manutencao": 263717,
             "rotina": 263527,
-            "escalabilidade_gov": 261699
+            "escalabilidade_gov": 261699,
         }
         self._depara_projetos = {}
         self._depara_tarefas = {}
-        self._limpar_cache()
 
     def _criar_arquivo_padrao(self, arquivo: Path):
         """Cria arquivo de configuração padrão"""
@@ -83,54 +77,46 @@ class ConfigNetProjectHandler:
                 "evolucao": 263719,
                 "manutencao": 263717,
                 "rotina": 263527,
-                "escalabilidade_gov": 261699
+                "escalabilidade_gov": 261699,
             },
             "depara": {
                 "projetos": {
                     "16543D - ES5 -  Desenvolvimento de Produto": "16543D - ES5 - Desenvolvimento de Produto"
                 },
-                "tarefas": {}
-            }
+                "tarefas": {},
+            },
         }
 
         try:
-            with open(arquivo, 'w', encoding='utf-8') as f:
+            with open(arquivo, "w", encoding="utf-8") as f:
                 json.dump(padrao, f, indent=2, ensure_ascii=False)
-            logger.info(f"📄 Criado config_netproject.json padrão")
-        except IOError as e:
+            logger.info("📄 Criado config_netproject.json padrão")
+        except OSError as e:
             logger.error(f"❌ Erro ao criar config_netproject.json: {e}")
 
     # Properties read-only com cópias defensivas
     @property
-    def projetos_netproject(self) -> Dict[str, int]:
+    def projetos_netproject(self) -> dict[str, int]:
         """Retorna cópia do dicionário de projetos NetProject"""
         return self._projetos_netproject.copy()
 
     @property
-    def depara_projetos(self) -> Dict[str, str]:
+    def depara_projetos(self) -> dict[str, str]:
         """Retorna cópia do dicionário de/para de projetos"""
         return self._depara_projetos.copy()
 
     @property
-    def depara_tarefas(self) -> Dict[str, str]:
+    def depara_tarefas(self) -> dict[str, str]:
         """Retorna cópia do dicionário de/para de tarefas"""
         return self._depara_tarefas.copy()
 
-    @lru_cache(maxsize=512)
     def aplicar_projeto(self, valor: str) -> str:
         """Aplica de/para em projeto (com cache)"""
         return self._depara_projetos.get(valor, valor)
 
-    @lru_cache(maxsize=512)
     def aplicar_tarefa(self, valor: str) -> str:
         """Aplica de/para em tarefa (com cache)"""
         return self._depara_tarefas.get(valor, valor)
-
-    def _limpar_cache(self):
-        """Limpa cache de memoização"""
-        self.aplicar_projeto.cache_clear()
-        self.aplicar_tarefa.cache_clear()
-        logger.debug("🧹 Cache de de/para limpo")
 
     def recarregar(self):
         """Recarrega configurações do arquivo"""
@@ -147,12 +133,10 @@ class ConfigNetProjectHandler:
     def adicionar_depara_projeto(self, de: str, para: str):
         """Adiciona regra de/para de projeto (só em memória)"""
         self._depara_projetos[de] = para
-        self._limpar_cache()
 
     def adicionar_depara_tarefa(self, de: str, para: str):
         """Adiciona regra de/para de tarefa (só em memória)"""
         self._depara_tarefas[de] = para
-        self._limpar_cache()
 
     def salvar(self) -> bool:
         """Salva alterações no arquivo JSON"""
@@ -161,20 +145,18 @@ class ConfigNetProjectHandler:
         try:
             dados = {
                 "projetos_netproject": self._projetos_netproject,
-                "depara": {
-                    "projetos": self._depara_projetos,
-                    "tarefas": self._depara_tarefas
-                }
+                "depara": {"projetos": self._depara_projetos, "tarefas": self._depara_tarefas},
             }
 
-            with open(arquivo_config, 'w', encoding='utf-8') as f:
+            with open(arquivo_config, "w", encoding="utf-8") as f:
                 json.dump(dados, f, indent=2, ensure_ascii=False)
 
             logger.info("💾 Configurações salvas em config_netproject.json")
             return True
-        except IOError as e:
+        except OSError as e:
             logger.error(f"❌ Erro ao salvar config_netproject.json: {e}")
             return False
+
 
 # Instância global (singleton)
 config_netproject = ConfigNetProjectHandler()
