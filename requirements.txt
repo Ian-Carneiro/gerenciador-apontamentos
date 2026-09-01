@@ -1,0 +1,6 @@
+playwright
+pyside6
+python-dotenv
+sqlalchemy
+screeninfo
+requests
