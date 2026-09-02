@@ -28,6 +28,7 @@ from PySide6.QtWidgets import (
     QSizePolicy,
     QVBoxLayout,
     QWidget,
+    QToolButton,
 )
 
 
@@ -202,8 +203,9 @@ class FilterableComboBox(QWidget):
         self._btn_clear.clicked.connect(self._ao_clicar_limpar)
         row.addWidget(self._btn_clear)
 
-        self._btn = QPushButton("v")
+        self._btn = QToolButton()
         self._btn.setObjectName("fcbArrow")
+        self._btn.setArrowType(Qt.ArrowType.DownArrow)
         self._btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self._btn.clicked.connect(self._toggle_dropdown)
         row.addWidget(self._btn)

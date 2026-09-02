@@ -18,6 +18,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from src.ui.widgets.filterable_combo import FilterableComboBox
+
 
 def pedir_data(titulo: str = "Selecionar Data", parent: QWidget | None = None) -> str | None:
     dlg = QDialog(parent)
@@ -61,16 +63,14 @@ def selecionar_recurso_netproject(recursos: list[str], parent: QWidget | None = 
     layout = QVBoxLayout(dlg)
     layout.addWidget(QLabel("Selecione seu nome como cadastrado no NetProject:"))
 
-    combo = QComboBox()
-    combo.setEditable(True)
-    combo.addItems(recursos)
-    combo.setCurrentIndex(-1)
+    combo = FilterableComboBox(placeholder="Digite ou selecione...")
+    combo.set_dados(recursos)
     layout.addWidget(combo)
 
     resultado: dict = {"valor": None}
 
     def _confirmar():
-        valor = combo.currentText().strip()
+        valor = combo.valor_atual()
         if not valor:
             return
         resultado["valor"] = valor

@@ -159,6 +159,7 @@ class DividirDialog(QDialog):
         btns.accepted.connect(self._dividir)
         btns.rejected.connect(self.reject)
         layout.addWidget(btns)
+        self.setFocus()
 
     @staticmethod
     def _caption(texto: str) -> QLabel:

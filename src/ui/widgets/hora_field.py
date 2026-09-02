@@ -16,7 +16,8 @@ from datetime import date, datetime
 
 from PySide6.QtCore import QRegularExpression, Qt
 from PySide6.QtGui import QRegularExpressionValidator
-from PySide6.QtWidgets import QHBoxLayout, QLabel, QLineEdit, QWidget
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QLineEdit, QWidget, QSizePolicy
+
 
 # ── Helpers (também importáveis diretamente) ───────────────────────────────────
 
@@ -45,13 +46,15 @@ class HoraField(QWidget):
     def __init__(self, label: str, parent=None):
         super().__init__(parent)
         layout = QHBoxLayout(self)
+        self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(8)
 
-        lbl = QLabel(label)
-        lbl.setObjectName("labelFieldCaption")
-        lbl.setFixedWidth(52)
-        layout.addWidget(lbl)
+        if label:
+            lbl = QLabel(label)
+            lbl.setObjectName("labelFieldCaption")
+            lbl.setFixedWidth(52)
+            layout.addWidget(lbl)
 
         self.edit = QLineEdit()
         self.edit.setObjectName("lineEditHora")

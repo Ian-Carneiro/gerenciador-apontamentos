@@ -58,14 +58,14 @@ class StatusBar(QFrame):
         projeto = apontamento.projeto
         tarefa = apontamento.tarefa
         # Trunca para caber na barra
-        if len(projeto) > 60:
-            projeto = projeto[:58] + "..."
-        if len(tarefa) > 60:
-            tarefa = tarefa[:58] + "..."
+        if len(projeto) > 55:
+            projeto = projeto[:53] + "..."
+        if len(tarefa) > 55:
+            tarefa = tarefa[:53] + "..."
 
         self._set_led_status("active")
         self._label_contexto.setText(f"{projeto}\n{tarefa}")
-        self._label_contexto.setStyleSheet(f"color: {GREEN}; font-size: 13px; font-weight: 600;")
+        self._label_contexto.setStyleSheet(f"color: {GREEN}; font-size: 11px; font-weight: 600;")
         self._tick()
         self._timer.start()
 

@@ -74,6 +74,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Apontador de Horas")
         self.setMinimumSize(520, 520)
         self.resize(560, 580)
+        self._centralizar()
 
         # Aplica QSS global
         QApplication.instance().setStyleSheet(_carregar_qss())
@@ -100,6 +101,12 @@ class MainWindow(QMainWindow):
         # Status bar
         self._status_bar = StatusBar(self)
         root.addWidget(self._status_bar)
+
+    def _centralizar(self):
+        tela = QApplication.primaryScreen().availableGeometry()
+        geo = self.frameGeometry()
+        geo.moveCenter(tela.center())
+        self.move(geo.topLeft())
 
     def _build_header(self) -> QWidget:
         frame = QFrame()

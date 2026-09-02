@@ -186,8 +186,6 @@ class ApontamentoPage(BasePage):
             with self.page.expect_navigation():
                 self.page.click(self.BTN_SUBMIT)
 
-            self.sleep(5)
-
             modal = self.page.locator("#info-msg-modal")
 
             try:

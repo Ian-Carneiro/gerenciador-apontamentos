@@ -199,6 +199,12 @@ Abre um diálogo com o Início atual (e o Fim atual, se o apontamento já estive
 ### ✂️ Dividir apontamento
 Só fica habilitado para apontamentos já finalizados — em uma tarefa ainda em execução, o ícone aparece desabilitado com o aviso "Finalize o apontamento para dividir". Informe o **horário de corte** e o diálogo mostra em tempo real como ficam a Parte 1 e a Parte 2 (mesmo projeto/tarefa, cada uma com seu próprio intervalo e duração). Clique em **Dividir** para confirmar.
 
+### ➕ Adicionar apontamento
+Insere um novo apontamento imediatamente antes ou depois do apontamento de referência. Selecione a posição (**Adicionar antes** ou **Adicionar depois**), informe Projeto, Tarefa, o **Horário** de início (se antes) ou de fim (se depois) e, opcionalmente, uma Nota. O preview é atualizado em tempo real mostrando o intervalo do novo apontamento.
+- **Adicionar depois** só fica disponível para apontamentos já finalizados.
+- O horário informado deve ser anterior ao início do apontamento de referência (se antes) ou posterior ao seu fim (se depois).
+- O apontamento vizinho afetado tem seu horário ajustado automaticamente para evitar buracos ou sobreposições.
+
 ### 🗑️ Deletar
 Pede confirmação mostrando projeto, tarefa e horário do apontamento, avisando que a ação não pode ser desfeita.
 
