@@ -81,7 +81,7 @@ Aplicação desktop para registro, gerenciamento e envio automático de apontame
 ```bash
 # 1. Clone o repositório
 git clone <url-do-repositorio>
-cd gerenciador-apontamento
+cd gerenciador-apontamentos
 
 # 2. Crie e ative um ambiente virtual
 python -m venv .venv
