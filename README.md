@@ -185,7 +185,7 @@ Com uma tarefa em execução, opcionalmente informe o **Fim** (senão usa o hor�
 
 ## Edição no Histórico
 
-Acesse em **Visualizar → Histórico de Apontamentos** (`Ctrl+H`). A tabela agrupa os apontamentos por dia, com o total de horas ao final de cada bloco, e cada linha tem 4 ícones de ação: **✏️ Editar**, **⏱ Ajustar horário**, **✂️ Dividir** e **🗑️ Deletar**.
+Acesse em **Visualizar → Histórico de Apontamentos** (`Ctrl+H`). A tabela agrupa os apontamentos por dia, com o total de horas ao final de cada bloco, e cada linha tem 5 ícones de ação: **✏️ Editar**, **⏱ Ajustar horário**, **✂️ Dividir**, **➕ Adicionar** e **🗑️ Deletar**.
 
 ### ✏️ Editar projeto/tarefa/nota
 Abre um diálogo com Projeto, Tarefa e Nota pré-preenchidos; os horários aparecem só como referência (somente leitura). Altere o que quiser e clique em **Salvar**.
