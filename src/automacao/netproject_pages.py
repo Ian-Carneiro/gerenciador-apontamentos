@@ -188,12 +188,9 @@ class ApontamentoPage(BasePage):
 
             modal = self.page.locator("#info-msg-modal")
 
-            try:
-                modal.wait_for(state="visible", timeout=3000)
+            if modal.is_visible():
                 modal.locator("xpath=..").locator(".ui-dialog-titlebar-close").click()
                 logger.info("ℹ️ Modal de informação fechada")
-            except TimeoutError:
-                pass
 
             logger.info("✅ Apontamentos enviados e confirmados")
             return True

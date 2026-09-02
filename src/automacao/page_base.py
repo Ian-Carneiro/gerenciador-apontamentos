@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from playwright.sync_api import Browser, BrowserContext, Page, Playwright
+from playwright.sync_api import Browser, BrowserContext, Page, Playwright, ViewportSize
 from screeninfo import get_monitors
 
 import config
@@ -61,7 +61,7 @@ class BrowserManager:
 
         state_path = Path(config.STATE_FILE)
         context = browser.new_context(
-            viewport={"width": monitor.width, "height": monitor.height},
+            viewport=ViewportSize(width=monitor.width, height=monitor.height),
             storage_state=str(state_path) if state_path.exists() else None,
         )
         context.set_default_timeout(config.TIMEOUT_LONGO * 1000)
