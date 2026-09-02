@@ -8,7 +8,6 @@ Funções:
 
 from PySide6.QtCore import QDate, Qt
 from PySide6.QtWidgets import (
-    QComboBox,
     QDateEdit,
     QDialog,
     QHBoxLayout,

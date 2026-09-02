@@ -16,8 +16,7 @@ from datetime import date, datetime
 
 from PySide6.QtCore import QRegularExpression, Qt
 from PySide6.QtGui import QRegularExpressionValidator
-from PySide6.QtWidgets import QHBoxLayout, QLabel, QLineEdit, QWidget, QSizePolicy
-
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QLineEdit, QSizePolicy, QWidget
 
 # ── Helpers (também importáveis diretamente) ───────────────────────────────────
 
