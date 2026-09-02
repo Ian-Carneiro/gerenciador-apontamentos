@@ -38,6 +38,8 @@ class ColorFormatter(logging.Formatter):
     RESET: ClassVar[str] = "\033[0m"
 
     def format(self, record):
+        if sys.platform == "win32":
+            return super().format(record)
         color = self.COLORS.get(record.levelname, "")
         message = super().format(record)
         return f"{color}{message}{self.RESET}"

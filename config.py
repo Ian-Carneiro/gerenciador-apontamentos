@@ -38,17 +38,10 @@ NETPROJECT_PASS = os.getenv("SENHA_NET_PROJECT", "")
 SGIWEB_USER = os.getenv("SGI_WEB_LOGIN_USUARIO", "")
 SGIWEB_PASS = os.getenv("SGI_WEB_LOGIN_SENHA", "")
 
-# Chrome/Selenium
-CHROME_BINARY = os.getenv("CHROME_BINARY", RESOURCES_DIR / "chrome-linux64/chrome")
-CHROMEDRIVER_PATH = os.getenv(
-    "CHROMEDRIVER_PATH", RESOURCES_DIR / "chromedriver-linux64/chromedriver"
-)
-
 # Timeouts
 TIMEOUT_CURTO = 0.5
 TIMEOUT_MEDIO = 2.0
 TIMEOUT_LONGO = 10.0
-SELENIUM_IMPLICIT_WAIT = 5
 
 # Logging
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
