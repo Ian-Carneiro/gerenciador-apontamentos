@@ -242,6 +242,7 @@ class FilterableComboBox(QWidget):
     def set_valor(self, valor: str):
         self._edit.blockSignals(True)
         self._edit.setText(valor)
+        self._edit.setCursorPosition(0)
         self._edit.blockSignals(False)
         self._btn_clear.setVisible(bool(valor.strip()))
 
