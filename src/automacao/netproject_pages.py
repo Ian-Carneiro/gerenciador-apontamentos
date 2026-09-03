@@ -1,10 +1,12 @@
 """Page Objects para NetProject - PLAYWRIGHT"""
-import re
+
 from pathlib import Path
+import re
 
 import config
 from src.utils.logger import get_logger
 
+from .exceptions import CredenciaisInvalidasError
 from .page_base import BasePage
 
 logger = get_logger(__name__)
@@ -39,7 +41,7 @@ class LoginPage(BasePage):
 
     def _login_credenciais(self) -> bool:
         if not config.NETPROJECT_USER or not config.NETPROJECT_PASS:
-            raise Exception("❌ Credenciais NetProject não configuradas no .env")
+            raise CredenciaisInvalidasError("❌ Credenciais NetProject não configuradas no .env")
 
         self.page.fill(self.USERNAME_INPUT, config.NETPROJECT_USER)
         self.page.fill(self.PASSWORD_INPUT, config.NETPROJECT_PASS)
@@ -93,13 +95,6 @@ class ApontamentoPage(BasePage):
         selects_row = linhas_internas.nth(0)
         tds = selects_row.locator("td")
 
-        # tds.nth(1).locator("span.selection").click()
-        # self._preencher_select2(apontamento["projeto"])
-        #
-        # self.sleep(0.5)
-        #
-        # tds.nth(3).locator("span.selection").click()
-        # self._preencher_select2(apontamento["tarefa"])
         self._selecionar_select2(tds.nth(1).locator("span.selection"), apontamento["projeto"])
 
         self.sleep(0.5)
@@ -196,8 +191,6 @@ class ApontamentoPage(BasePage):
                 )
 
             self.sleep(0.5)
-
-        # raise Exception(f"❌ Select2 não confirmou seleção de '{valor}' após {tentativas} tentativas")
 
     def _preencher_hora(self, td_locator, hora: str):
         """Preenche campo de hora (HH:MM)"""
