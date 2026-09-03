@@ -72,6 +72,7 @@ class ApontamentoPage(BasePage):
         "#body_main > span > span > span.select2-search.select2-search--dropdown > input"
     )
     SELECT2_RESULTS = "#body_main > span > span > span.select2-results"
+    OBSERVACAO_TEXTAREA = "textarea[name^='dsc_manual']"
 
     def abrir(self):
         self.page.goto(self.URL)
@@ -109,6 +110,9 @@ class ApontamentoPage(BasePage):
 
         if apontamento.get("hora_fim"):
             self._preencher_hora(tds_horas.nth(3), apontamento["hora_fim"])
+
+        if apontamento.get("observacao"):
+            self._preencher_observacao(linha_atual, apontamento["observacao"])
 
     def _buscar_opcao(self, campo, resultados, valor: str):
         """
@@ -208,6 +212,14 @@ class ApontamentoPage(BasePage):
         inputs.nth(1).press("Control+A")
         inputs.nth(1).press("Delete")
         inputs.nth(1).press_sequentially(m)
+
+    def _preencher_observacao(self, linha_atual, texto: str):
+        """Preenche o campo de Observações da linha, se houver texto."""
+        textarea = linha_atual.locator(self.OBSERVACAO_TEXTAREA)
+        if textarea.count() == 0:
+            return
+        textarea.first.click()
+        textarea.first.fill(texto.strip())
 
     def enviar(self) -> bool:
         try:

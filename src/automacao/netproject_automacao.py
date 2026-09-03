@@ -44,6 +44,7 @@ class AutomacaoNetProject:
                     "hora_inicio": apt.inicio.strftime("%H:%M:%S"),
                     "hora_fim": apt.fim.strftime("%H:%M:%S") if apt.fim else None,
                     "horas_trabalhadas": apt.horas if apt.fim else None,
+                    "observacao": getattr(apt, "nota", None),
                 }
             )
 

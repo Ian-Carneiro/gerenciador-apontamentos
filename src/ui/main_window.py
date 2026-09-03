@@ -466,12 +466,22 @@ class MainWindow(QMainWindow):
             self._mostrar_info(str(e))
             return
 
-        if not confirmar_apontamentos_netproject(apontamentos, data_str, parent=self):
+        aceito, incluir_observacao = confirmar_apontamentos_netproject(
+            apontamentos, data_str, parent=self
+        )
+        if not aceito:
             self._mostrar_toast("Envio cancelado")
             return
 
+        if not incluir_observacao:
+            for apt in apontamentos:
+                apt["observacao"] = None
+
         def confirmar_envio():
-            return confirmar_apontamentos_netproject(apontamentos, data_str, parent=self)
+            confirmado, _ = confirmar_apontamentos_netproject(
+                apontamentos, data_str, parent=self, mostrar_checkbox_observacao=False
+            )
+            return confirmado
 
         try:
             automacao.enviar(apontamentos, data_str, confirmar_envio=confirmar_envio)

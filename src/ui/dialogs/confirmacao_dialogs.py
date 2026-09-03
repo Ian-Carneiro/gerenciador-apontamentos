@@ -11,6 +11,7 @@ use src.ui.dialogs.utils_dialogs.
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
+    QCheckBox,
     QDialog,
     QHBoxLayout,
     QHeaderView,
@@ -24,8 +25,11 @@ from PySide6.QtWidgets import (
 
 
 def confirmar_apontamentos_netproject(
-    apontamentos: list[dict], data_str: str, parent: QWidget | None = None
-) -> bool:
+    apontamentos: list[dict],
+    data_str: str,
+    parent: QWidget | None = None,
+    mostrar_checkbox_observacao: bool = True,
+) -> tuple[bool, bool]:
     """Exibe diálogo de confirmação visual para apontamentos NetProject"""
     dlg = QDialog(parent)
     dlg.setWindowTitle("Confirmar Apontamentos - NetProject")
@@ -56,6 +60,12 @@ def confirmar_apontamentos_netproject(
 
     layout.addWidget(tabela)
 
+    chk_observacao = None
+    if mostrar_checkbox_observacao:
+        chk_observacao = QCheckBox("Preencher campo de Observações")
+        chk_observacao.setChecked(True)
+        layout.addWidget(chk_observacao)
+
     confirmado = {"valor": False}
 
     def confirmar():
@@ -64,7 +74,7 @@ def confirmar_apontamentos_netproject(
 
     layout.addLayout(_botoes(confirmar, dlg.reject))
     dlg.exec()
-    return confirmado["valor"]
+    return confirmado["valor"], chk_observacao.isChecked() if chk_observacao else False
 
 
 def confirmar_horarios_sgiweb(
