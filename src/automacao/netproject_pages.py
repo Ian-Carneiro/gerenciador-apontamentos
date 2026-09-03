@@ -1,5 +1,5 @@
 """Page Objects para NetProject - PLAYWRIGHT"""
-
+import re
 from pathlib import Path
 
 import config
@@ -115,6 +115,47 @@ class ApontamentoPage(BasePage):
         if apontamento.get("hora_fim"):
             self._preencher_hora(tds_horas.nth(3), apontamento["hora_fim"])
 
+    def _buscar_opcao(self, campo, resultados, valor: str):
+        """
+        Digita `valor` incrementalmente (palavra por palavra) até o filtro
+        retornar 3 opções ou menos, e retorna a que bate com o valor exato.
+        """
+        palavras = valor.split()
+        busca = ""
+
+        for palavra in palavras:
+            candidato = f"{busca} {palavra}".strip()
+
+            campo.press("Control+A")
+            campo.press("Delete")
+            campo.press_sequentially(candidato, delay=6)
+            self.sleep(0.5)
+
+            opcoes = resultados.locator("li.select2-results__option").filter(
+                has_not_text="carregando"
+            )
+            count = opcoes.count()
+
+            if count == 0:
+                continue  # palavra quebrou a busca, ignora e segue com a próxima
+
+            busca = candidato
+
+            if count <= 3:
+                valor_norm = self._normalizar_espacos(valor).lower()
+                for i in range(count):
+                    opcao = opcoes.nth(i)
+                    texto_norm = self._normalizar_espacos(opcao.text_content()).lower()
+                    if valor_norm in texto_norm:
+                        return opcao
+                return None
+
+        return None
+
+    @staticmethod
+    def _normalizar_espacos(texto: str) -> str:
+        return re.sub(r"\s+", " ", texto).strip()
+
     def _selecionar_select2(self, elemento_trigger, valor: str, tentativas: int = 3) -> None:
         """
         Abre o select2 pelo `elemento_trigger`, digita `valor`, clica na
@@ -134,21 +175,15 @@ class ApontamentoPage(BasePage):
             resultados = self.page.locator(self.SELECT2_RESULTS).last
 
             campo.click()
-            campo.press("Control+A")
-            campo.press("Delete")
-            campo.press_sequentially(valor, delay=6)
-            self.sleep(0.6)
 
-            opcoes = resultados.locator("li.select2-results__option").filter(
-                has_not_text="carregando"
-            )
+            opcao = self._buscar_opcao(campo, resultados, valor)
 
-            if opcoes.count() > 0:
-                opcoes.first.click()
+            if opcao is not None:
+                opcao.click()
                 self.sleep(0.3)
 
-                texto_selecionado = elemento_trigger.text_content().strip()
-                if valor.strip().lower() in texto_selecionado.lower():
+                texto_selecionado = self._normalizar_espacos(elemento_trigger.text_content())
+                if self._normalizar_espacos(valor).lower() in texto_selecionado.lower():
                     return  # confirmado ✅
 
                 logger.warning(
