@@ -24,7 +24,7 @@ class LoginPage(BasePage):
         self.page.goto(self.URL)
 
         # Cookies (se existirem) já foram injetados via storage_state no BrowserManager
-        if self._logo_visivel():
+        if self._logo_visivel(timeout=2000):
             logger.info("✅ Login com cookies")
             return True
 
