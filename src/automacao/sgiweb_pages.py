@@ -96,7 +96,7 @@ class SGIWebMarcacaoPage(BasePage):
             return False
 
         self.page.reload()
-        self.sleep(5)
+        self.sleep(1)
         logger.info("✅ Apontamentos enviados com sucesso")
         return True
 

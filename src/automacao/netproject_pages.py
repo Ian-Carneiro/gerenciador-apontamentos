@@ -227,6 +227,8 @@ class ApontamentoPage(BasePage):
                 modal.locator("xpath=..").locator(".ui-dialog-titlebar-close").click()
                 logger.info("ℹ️ Modal de informação fechada")
 
+            self.sleep(1)
+
             logger.info("✅ Apontamentos enviados e confirmados")
             return True
 
