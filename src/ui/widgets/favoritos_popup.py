@@ -39,10 +39,12 @@ class FavoritosPopup(QFrame):
             btn.setCursor(Qt.CursorShape.PointingHandCursor)
             btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
             btn.setToolTip(f"{fav.horas_str} nos últimos 7 dias")
-            btn.clicked.connect(
-                lambda _, p=fav.projeto, t=fav.tarefa: self.favorito_escolhido.emit(p, t)
-            )
+            btn.clicked.connect(lambda _, p=fav.projeto, t=fav.tarefa: self._escolher(p, t))
             v.addWidget(btn)
+
+    def _escolher(self, projeto: str, tarefa: str):
+        self.favorito_escolhido.emit(projeto, tarefa)
+        self.close()
 
     def abrir_abaixo_de(self, widget: QWidget):
         self.setFixedWidth(max(widget.width() + 60, self._LARGURA_MIN))
