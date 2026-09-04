@@ -224,7 +224,7 @@ class ApontamentoPage(BasePage):
     def enviar(self) -> bool:
         try:
             with self.page.expect_navigation():
-                self.page.click(self.BTN_SUBMIT)
+                self.page.click(self.BTN_SUBMIT, no_wait_after=True)
 
             modal = self.page.locator("#info-msg-modal")
 
