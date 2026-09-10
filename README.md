@@ -210,6 +210,40 @@ Pede confirmação mostrando projeto, tarefa e horário do apontamento, avisando
 
 ---
 
+## Mesclagem com Mikael
+
+A tela de mesclagem compara os apontamentos locais do dia com o registro do sistema Mikael e apresenta uma tabela unificada, permitindo fechar automaticamente pequenas divergências de horário entre as duas fontes antes do envio.
+
+A tabela mostra Origem (**Local** ou **Mikael**), Início, Fim, Projeto, Tarefa e uma coluna **Ajustar** com checkbox nas linhas onde há uma divergência de horário com o registro adjacente.
+
+**Regras:**
+- O Mikael é sempre a fonte da verdade — seus horários nunca são alterados.
+- Apenas o apontamento **Local** adjacente se desloca para fechar a divergência.
+- O checkbox vem marcado por padrão quando a divergência é pequena, seja ela um intervalo em aberto ou uma sobreposição entre os dois registros.
+- Divergências grandes (ex.: uma sobreposição extensa ou um intervalo real sem registro) vêm com o checkbox desmarcado, exigindo confirmação manual.
+- A tabela é uma prévia ao vivo: marcar/desmarcar o checkbox atualiza o horário exibido na hora, sem gravar nada no banco. A gravação só ocorre ao clicar em **"Aplicar ajustes"**.
+- Passe o mouse sobre o checkbox para ver a descrição completa da divergência (horários, duração e os dois lados envolvidos).
+
+### Exemplos práticos
+
+**1. Intervalo pequeno em aberto (imprecisão no fim do apontamento Local)**
+Local termina 13:56:44, Mikael começa 13:57:44 (1min de diferença).
+→ Checkbox vem marcado. Tabela mostra o Fim do Local ajustado para `13:57:44`, eliminando o intervalo.
+
+**2. Sobreposição pequena (Local "vazando" sobre o Mikael)**
+Local vai até 13:58:44, mas o Mikael já começou às 13:57:44 (1min de sobreposição).
+→ Checkbox vem marcado. Tabela mostra o Fim do Local recuado para `13:57:44`.
+
+**3. Sobreposição grande**
+Local vai até 15:08:46, mas o Mikael começou às 13:57:44 (71min de sobreposição).
+→ Checkbox vem **desmarcado** por padrão (ajuste grande demais para ser automático). Tabela mantém o Fim original do Local até o usuário decidir marcar manualmente.
+
+**4. Intervalo após o Mikael (retomada do trabalho Local)**
+Mikael termina 13:59:18, o próximo apontamento Local só começa às 14:04:00 (intervalo de 4min42s).
+→ Se pequeno o suficiente, checkbox vem marcado. Tabela mostra o Início do Local recuado para `13:59:18`, alinhando com o fim do Mikael.
+
+---
+
 ## Automação
 
 ### NetProject

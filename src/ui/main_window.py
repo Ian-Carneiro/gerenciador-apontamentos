@@ -21,6 +21,7 @@ Layout:
 
 from __future__ import annotations
 
+from datetime import datetime
 from pathlib import Path
 
 from PySide6.QtCore import Qt
@@ -222,6 +223,10 @@ class MainWindow(QMainWindow):
         act_sgi.setShortcut("Ctrl+G")
         act_sgi.triggered.connect(self._on_automacao_sgiweb)
         menu_auto.addAction(act_sgi)
+        act_mesclar = QAction("🔀  Mesclar Apontamentos com Mikael", self)
+        act_mesclar.setShortcut("Ctrl+M")
+        act_mesclar.triggered.connect(self._on_mesclar_mikael)
+        menu_auto.addAction(act_mesclar)
 
         # Configurar
         menu_conf = bar.addMenu("Configurar")
@@ -500,6 +505,22 @@ class MainWindow(QMainWindow):
 
         self._mostrar_info("✅ Apontamentos enviados com sucesso!")
 
+    def _abrir_mesclar_mikael(self, data_str: str) -> bool:
+        """Abre a tela de mesclagem/ajuste com o Mikael para `data_str`.
+        Retorna True se os ajustes foram aplicados (diálogo aceito)."""
+        from src.ui.dialogs.mesclar_dialog import MesclarApontamentosDialog
+
+        data = datetime.strptime(data_str, "%d/%m/%Y").date()
+        apontamentos_db = self._svc._repo.obter_por_dia(data)
+
+        dlg = MesclarApontamentosDialog(
+            apontamentos_db=apontamentos_db,
+            data_str=data_str,
+            repo=self._svc._repo,
+            parent=self,
+        )
+        return dlg.exec() == MesclarApontamentosDialog.DialogCode.Accepted
+
     def _on_automacao_sgiweb(self):
         from src.automacao.exceptions import (
             AutomacaoError,
@@ -523,9 +544,23 @@ class MainWindow(QMainWindow):
             self._mostrar_info(str(e))
             return
 
-        if not confirmar_horarios_sgiweb(horarios, data_str, parent=self):
+        confirmado, usar_mikael = confirmar_horarios_sgiweb(horarios, data_str, parent=self)
+        if not confirmado:
             self._mostrar_toast("Envio cancelado")
             return
+
+        if usar_mikael:
+            if not self._abrir_mesclar_mikael(data_str):
+                self._mostrar_toast("Envio cancelado")
+                return
+
+            horarios = automacao.obter_horarios_dia(data_str)
+            confirmado, _ = confirmar_horarios_sgiweb(
+                horarios, data_str, parent=self, mostrar_checkbox_mikael=False
+            )
+            if not confirmado:
+                self._mostrar_toast("Envio cancelado")
+                return
 
         def confirmar_sobrescrita():
             return mbox.askyesno(
@@ -533,7 +568,11 @@ class MainWindow(QMainWindow):
             )
 
         try:
-            automacao.enviar(horarios, data_str, confirmar_sobrescrita=confirmar_sobrescrita)
+            automacao.enviar(
+                horarios,
+                data_str,
+                confirmar_sobrescrita=confirmar_sobrescrita,
+            )
         except SobrescritaCanceladaError:
             self._mostrar_toast("Sobrescrita cancelada")
             return
@@ -548,6 +587,17 @@ class MainWindow(QMainWindow):
             return
 
         self._mostrar_info("✅ Apontamentos enviados com sucesso!")
+
+    def _on_mesclar_mikael(self):
+        from src.ui.dialogs.utils_dialogs import pedir_data
+
+        data_str = pedir_data("Mesclar com Mikael", parent=self)
+        if not data_str:
+            return
+
+        if self._abrir_mesclar_mikael(data_str):
+            self._restaurar_estado()
+            self._mostrar_toast("✅ Apontamentos mesclados com sucesso")
 
     def _on_atualizar_projetos(self):
         from src.core.projetos_tarefas import ProjetosTarefasHandler

@@ -37,6 +37,8 @@ class AutomacaoNetProject:
 
         apontamentos = []
         for apt in self.repo.obter_por_dia(data):
+            if getattr(apt, "projeto", None) == "Mikael Apontamentos":
+                continue
             apontamentos.append(
                 {
                     "projeto": apt.projeto,

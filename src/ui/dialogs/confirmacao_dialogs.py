@@ -78,8 +78,11 @@ def confirmar_apontamentos_netproject(
 
 
 def confirmar_horarios_sgiweb(
-    horarios: list[str], data_str: str, parent: QWidget | None = None
-) -> bool:
+    horarios: list[str],
+    data_str: str,
+    parent: QWidget | None = None,
+    mostrar_checkbox_mikael: bool = True,
+) -> tuple[bool, bool]:
     """Exibe diálogo de confirmação visual para horários SGIWeb"""
     dlg = QDialog(parent)
     dlg.setWindowTitle("Confirmar Apontamentos - SGIWeb")
@@ -114,6 +117,14 @@ def confirmar_horarios_sgiweb(
         aviso.setObjectName("lblAvisoAlerta")
         layout.addWidget(aviso)
 
+    chk_mikael = None
+    if mostrar_checkbox_mikael:
+        chk_mikael = QCheckBox(
+            "🔄 Ajustar horários com o Mikael (fecha pequenas divergências, sem substituir)"
+        )
+        chk_mikael.setChecked(False)
+        layout.addWidget(chk_mikael)
+
     confirmado = {"valor": False}
 
     def confirmar():
@@ -122,7 +133,7 @@ def confirmar_horarios_sgiweb(
 
     layout.addLayout(_botoes(confirmar, dlg.reject))
     dlg.exec()
-    return confirmado["valor"]
+    return confirmado["valor"], chk_mikael.isChecked() if chk_mikael else False
 
 
 def _label_titulo(texto: str) -> QLabel:

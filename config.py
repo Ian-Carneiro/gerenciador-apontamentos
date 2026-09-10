@@ -29,6 +29,7 @@ for d in [DATA_DIR, LOG_DIR, CACHE_DIR]:
 ARQUIVO_APONTAMENTOS = DATA_DIR / "apontamentos.csv"
 ARQUIVO_LOG = LOG_DIR / "app.log"
 STATE_FILE = CACHE_DIR / "state.json"
+MIKAEL_XLS_FILE = CACHE_DIR / "mikael_apontamentos.xls"
 
 # Credenciais NetProject
 NETPROJECT_USER = os.getenv("USUARIO_NET_PROJECT", "")
@@ -42,6 +43,8 @@ SGIWEB_PASS = os.getenv("SGI_WEB_LOGIN_SENHA", "")
 TIMEOUT_CURTO = 0.5
 TIMEOUT_MEDIO = 2.0
 TIMEOUT_LONGO = 10.0
+
+MIKAEL_GAP_THRESHOLD_MIN = 5
 
 # Logging
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()

@@ -14,6 +14,9 @@ dependencies = [
     "sqlalchemy>=2.0",
     "screeninfo>=0.8",
     "requests>=2.31",
+    "pandas",
+    "openpyxl",
+    "xlrd>=2.0",
 ]
 
 [project.optional-dependencies]
