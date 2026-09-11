@@ -25,7 +25,7 @@ from datetime import datetime
 from pathlib import Path
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QAction
+from PySide6.QtGui import QAction, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
     QFrame,
@@ -40,6 +40,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from config import APP_ICON
 from src.core.apontamento_service import ApontamentoService, EstadoApp
 from src.db.models import Apontamento
 from src.db.repository import ApontamentoAtivoError, HorarioInvalidoError, SobreposicaoError
@@ -114,10 +115,19 @@ class MainWindow(QMainWindow):
         frame.setObjectName("appHeader")
         frame.setFixedHeight(52)
         layout = QHBoxLayout(frame)
-        layout.setContentsMargins(16, 0, 12, 0)
+        layout.setContentsMargins(16, 1, 12, 2)
 
-        lbl_icon = QLabel("[H]")
+        lbl_icon = QLabel()
         lbl_icon.setObjectName("appHeaderIcon")
+        pixmap = QPixmap(APP_ICON)
+        lbl_icon.setPixmap(
+            pixmap.scaled(
+                40,
+                40,
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation,
+            )
+        )
         layout.addWidget(lbl_icon)
 
         lbl_title = QLabel("Apontador de Horas")

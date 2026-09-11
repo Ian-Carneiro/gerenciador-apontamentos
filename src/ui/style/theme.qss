@@ -636,8 +636,7 @@ QFrame#appHeader {
 QLabel#appHeaderIcon {
     font-size: 11px;
     font-weight: 700;
-    color: #f8ad57;
-    background: #4a3a20;
+    background: #4a5360;
     border-radius: 4px;
     padding: 2px 5px;
 }

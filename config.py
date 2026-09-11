@@ -17,6 +17,7 @@ load_dotenv(dotenv_path=DIR_BASE / ".env")
 
 # Diretórios
 DATA_DIR = DIR_BASE / "data"
+ASSETS_DIR = DIR_BASE / "assets"
 LOG_DIR = DIR_BASE / "logs"
 CACHE_DIR = DATA_DIR / ".cache"
 RESOURCES_DIR = DIR_BASE / "resources"
@@ -30,6 +31,7 @@ ARQUIVO_APONTAMENTOS = DATA_DIR / "apontamentos.csv"
 ARQUIVO_LOG = LOG_DIR / "app.log"
 STATE_FILE = CACHE_DIR / "state.json"
 MIKAEL_XLS_FILE = CACHE_DIR / "mikael_apontamentos.xls"
+APP_ICON = ASSETS_DIR / "app_icon.png"
 
 # Credenciais NetProject
 NETPROJECT_USER = os.getenv("USUARIO_NET_PROJECT", "")

@@ -13,7 +13,6 @@ import sys
 # Garante que src/ esteja no path ao rodar direto
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication
 
 from src.core.apontamento_service import ApontamentoService
@@ -40,9 +39,6 @@ def main():
     app = QApplication(sys.argv)
     app.setApplicationName("Apontador de Horas")
     app.setApplicationVersion("5.0.0")
-
-    # Suaviza o rendering em HiDPI
-    app.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps, True)
 
     window = MainWindow(service)
     window.show()

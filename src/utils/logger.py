@@ -46,6 +46,13 @@ class ColorFormatter(logging.Formatter):
 
 
 # --- Console Handler (colorido) ---
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):
+        pass
+
 console_handler = logging.StreamHandler()
 console_handler.setFormatter(ColorFormatter(LOG_FORMAT, DATE_FORMAT))
 
@@ -54,6 +61,7 @@ file_handler = RotatingFileHandler(
     LOG_FILE,
     maxBytes=1_000_000,  # 1 MB
     backupCount=10,  # mantém 10 versões
+    encoding="utf-8",
 )
 file_handler.setFormatter(logging.Formatter(LOG_FORMAT, DATE_FORMAT))
 
