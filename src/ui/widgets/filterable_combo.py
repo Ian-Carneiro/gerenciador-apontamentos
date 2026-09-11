@@ -17,6 +17,7 @@ from __future__ import annotations
 import unicodedata
 
 from PySide6.QtCore import QEvent, Qt, QTimer, Signal
+from PySide6.QtGui import QKeyEvent, QMouseEvent
 from PySide6.QtWidgets import (
     QApplication,
     QFrame,
@@ -128,13 +129,21 @@ class _DropdownPopup(QFrame):
         tela = QApplication.primaryScreen().availableGeometry().width()
         largura_final = min(largura_final, int(tela * 0.6))
         self.setFixedWidth(largura_final)
-        pos_global = self._parent_combo.mapToGlobal(self._parent_combo.rect().bottomLeft())
-        self.move(pos_global)
+        self._reposicionar()
         self.show()
         QApplication.instance().installEventFilter(self)
 
+    def _reposicionar(self):
+        pos_global = self._parent_combo.mapToGlobal(self._parent_combo.rect().bottomLeft())
+        self.move(pos_global)
+
     def eventFilter(self, obj, event):
-        if event.type() == QEvent.Type.MouseButtonPress:
+        if (
+            event.type() in (QEvent.Type.Move, QEvent.Type.Resize)
+            and obj is self._parent_combo.window()
+        ):
+            self._reposicionar()
+        elif isinstance(event, QMouseEvent) and event.type() == QEvent.Type.MouseButtonPress:
             pos = event.globalPosition().toPoint()
             dentro_popup = self.geometry().contains(pos)
             dentro_combo = self._parent_combo.rect().contains(self._parent_combo.mapFromGlobal(pos))
@@ -332,7 +341,7 @@ class FilterableComboBox(QWidget):
                 self._popup and self._popup.isVisible()
             ):
                 self._mostrar_dropdown()
-            if event.type() == QEvent.Type.KeyPress:
+            if isinstance(event, QKeyEvent) and event.type() == QEvent.Type.KeyPress:
                 key = event.key()
                 if key == Qt.Key.Key_Escape:
                     self._fechar_dropdown()
