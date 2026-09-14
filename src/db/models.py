@@ -5,11 +5,13 @@ SQLAlchemy 2.0 (mapped_column / DeclarativeBase)
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 
 from sqlalchemy import (
     Boolean,
+    Date,
     DateTime,
+    Float,
     ForeignKey,
     Integer,
     String,
@@ -172,6 +174,42 @@ class DePara(Base):
 
     def __repr__(self) -> str:
         return f"<DePara tipo={self.tipo} {self.de!r}→{self.para!r}>"
+
+
+# ─── Dias de Exceção (feriado / dayoff / atestado) ────────────────────────────
+
+
+class DiaExcecao(Base):
+    """
+    Dia que abate (total ou parcialmente) a jornada esperada no relatório.
+
+    recorrente=True  → repete todo ano, só mês/dia importam (ano fixado em 2000)
+    recorrente=False → data específica (dayoff, atestado pontual)
+    """
+
+    __tablename__ = "dias_excecao"
+    __table_args__ = (UniqueConstraint("data", "recorrente", name="uq_excecao_data"),)
+
+    FERIADO = "FERIADO"
+    DAYOFF = "DAYOFF"
+    ATESTADO = "ATESTADO"
+    TIPOS_VALIDOS = frozenset({FERIADO, DAYOFF, ATESTADO})
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tipo: Mapped[str] = mapped_column(String(10), nullable=False)
+    recorrente: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    data: Mapped[date] = mapped_column(Date, nullable=False)
+    horas_abonadas: Mapped[float | None] = mapped_column(Float, nullable=True)
+    observacao: Mapped[str] = mapped_column(Text, nullable=False, default="")
+
+    @property
+    def dia_inteiro(self) -> bool:
+        return self.horas_abonadas is None
+
+    def __repr__(self) -> str:
+        ref = f"{self.data.day:02d}/{self.data.month:02d}"
+        ref += " 🔁" if self.recorrente else f"/{self.data.year}"
+        return f"<DiaExcecao {self.tipo} {ref}>"
 
 
 # ─── SQLAlchemy event: atualiza atualizado_em automaticamente ─────────────────

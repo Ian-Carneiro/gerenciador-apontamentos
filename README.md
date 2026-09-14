@@ -11,6 +11,8 @@ Aplicação desktop para registro, gerenciamento e envio automático de apontame
 - Sincronização de projetos e tarefas via XMLs baixados do NetProject
 - Regras de De/Para configuráveis para normalização de nomes de projetos/tarefas
 - Automação de envio para NetProject e SGIWeb via Playwright (browser headful)
+- Mesclagem de apontamentos locais com o sistema Mikael, com ajuste automático de divergências de horário
+- Favoritos: acesso rápido aos pares projeto/tarefa mais usados nos últimos 7 dias
 - Suporte a múltiplos monitores (browser abre no monitor secundário, se disponível)
 - Log rotativo com saída colorida no console e arquivo em `logs/app.log`
 - Cache de cookies de sessão para evitar login repetido no NetProject
@@ -21,6 +23,8 @@ Aplicação desktop para registro, gerenciamento e envio automático de apontame
 
 ```
 .
+├── assets/
+│   └── app_icon.png
 ├── config.py                        # Configuração centralizada (paths, credenciais, timeouts)
 ├── main.py                          # Ponto de entrada: init_db → service → QApplication
 ├── requirements.txt
@@ -36,29 +40,45 @@ Aplicação desktop para registro, gerenciamento e envio automático de apontame
 ├── src/
 │   ├── automacao/
 │   │   ├── exceptions.py            # Exceções de domínio da automação
-│   │   ├── page_base.py             # BasePage e BrowserManager (Playwright)
-│   │   ├── netproject_pages.py      # Page Objects do NetProject
+│   │   ├── mesclar_apontamentos.py  # Lógica de mesclagem, gaps e ajustes com Mikael
+│   │   ├── mikael_automacao.py      # Download e parse do XLS do Mikael via Playwright
 │   │   ├── netproject_automacao.py  # Orquestrador da automação NetProject
-│   │   ├── sgiweb_pages.py          # Page Objects do SGIWeb
-│   │   └── sgiweb_automacao.py      # Orquestrador da automação SGIWeb
+│   │   ├── netproject_pages.py      # Page Objects do NetProject
+│   │   ├── page_base.py             # BasePage e BrowserManager (Playwright)
+│   │   ├── sgiweb_automacao.py      # Orquestrador da automação SGIWeb
+│   │   └── sgiweb_pages.py          # Page Objects do SGIWeb
 │   ├── core/
 │   │   ├── apontamento_service.py   # Serviço principal (regras de negócio)
 │   │   ├── config_netproject_handler.py  # Singleton de configuração NetProject
 │   │   ├── credentials_validator.py # Validação de credenciais do .env
-│   │   ├── favoritos_service.py     # Serviço de projetos/tarefas favoritos
 │   │   └── projetos_tarefas.py      # Download e parsing de XMLs do NetProject
 │   ├── db/
 │   │   ├── database.py              # Engine SQLAlchemy, sessões e init_db()
 │   │   ├── models.py                # Modelos ORM (Apontamento, Audit, ProjetoTarefa, DePara)
 │   │   └── repository.py            # Repositório de acesso a dados
 │   ├── ui/
+│   │   ├── dialogs/
+│   │   │   ├── adicionar_dialog.py      # Inserir apontamento antes/depois de um existente
+│   │   │   ├── ajustar_horario_dialog.py # Ajustar início e/ou fim de um apontamento
+│   │   │   ├── confirmacao_dialogs.py   # Confirmação visual para NetProject e SGIWeb
+│   │   │   ├── dividir_dialog.py        # Dividir apontamento em dois no horário de corte
+│   │   │   ├── editar_dialog.py         # Editar projeto, tarefa e nota
+│   │   │   ├── historico_dialog.py      # Histórico de apontamentos agrupado por dia
+│   │   │   ├── mesclar_dialog.py        # Mesclagem e ajuste com Mikael
+│   │   │   ├── projetos_tarefas_dialog.py # Editar/renomear pares projeto/tarefa no banco
+│   │   │   └── utils_dialogs.py         # Diálogos utilitários (pedir_data, selecionar_recurso)
 │   │   ├── main_window.py           # Janela principal (PySide6)
-│   │   ├── workers.py               # QThread workers para operações em background
-│   │   ├── messagebox_utils.py      # Utilitários de diálogo
-│   │   ├── ui_helpers.py            # Helpers de UI reutilizáveis
-│   │   ├── dialogs/                 # Diálogos modais da aplicação
-│   │   ├── style/                   # Estilos QSS
-│   │   └── widgets/                 # Widgets customizados
+│   │   ├── messagebox_utils.py      # Wrappers de QMessageBox (showinfo, askyesno, etc.)
+│   │   ├── style/
+│   │   │   ├── theme.qss            # Folha de estilos global (QSS)
+│   │   │   └── tokens.py            # Paleta de cores e constantes visuais (Mariana)
+│   │   ├── ui_helpers.py            # Helpers de UI reutilizáveis (centralizar_janela, truncar_texto)
+│   │   └── workers.py               # QThread workers para operações em background
+│   │   └── widgets/
+│   │       ├── favoritos_popup.py   # Popup de seleção rápida de favoritos
+│   │       ├── filterable_combo.py  # Campo editável com dropdown filtrado (sem QComboBox)
+│   │       ├── hora_field.py        # Widget de entrada HH:MM:SS com máscara automática
+│   │       └── status_bar.py        # Barra de estado com timer do apontamento ativo
 │   └── utils/
 │       └── logger.py                # Configuração de logging (console colorido + arquivo)
 └── tests/
@@ -110,13 +130,21 @@ Crie um arquivo `.env` na raiz do projeto com as seguintes variáveis:
 USUARIO_NET_PROJECT=seu_usuario
 SENHA_NET_PROJECT=sua_senha
 
-# SGIWeb
+# SGIWeb / Mikael (mesmo login)
 SGI_WEB_LOGIN_USUARIO=seu_usuario
 SGI_WEB_LOGIN_SENHA=sua_senha
 
 # Opcional
 LOG_LEVEL=INFO
 ```
+
+As credenciais do SGIWeb são reutilizadas para o login no Mikael. O threshold de gap (em minutos) abaixo do qual divergências são marcadas para ajuste automático está definido diretamente em `config.py`:
+
+```python
+MIKAEL_GAP_THRESHOLD_MIN = 5  # gaps < 5min vêm com checkbox marcado por padrão
+```
+
+Altere esse valor em `config.py` para ajustar o comportamento padrão da mesclagem.
 
 As credenciais são lidas em `config.py` via `python-dotenv` e nunca expostas na interface.
 
@@ -183,6 +211,12 @@ Com uma tarefa em execução, opcionalmente informe o **Fim** (senão usa o hor�
 
 ---
 
+## Favoritos
+
+O menu **★ Favoritos** (na barra de menus) abre um popup com os pares projeto/tarefa mais usados nos últimos 7 dias, ordenados por tempo total. Clicar em um item preenche automaticamente os campos Projeto e Tarefa da janela principal. O tooltip de cada item exibe o total de horas registradas naquele par no período.
+
+---
+
 ## Edição no Histórico
 
 Acesse em **Visualizar → Histórico de Apontamentos** (`Ctrl+H`). A tabela agrupa os apontamentos por dia, com o total de horas ao final de cada bloco, e cada linha tem 5 ícones de ação: **✏️ Editar**, **⏱ Ajustar horário**, **✂️ Dividir**, **➕ Adicionar** e **🗑️ Deletar**.
@@ -212,17 +246,33 @@ Pede confirmação mostrando projeto, tarefa e horário do apontamento, avisando
 
 ## Mesclagem com Mikael
 
-A tela de mesclagem compara os apontamentos locais do dia com o registro do sistema Mikael e apresenta uma tabela unificada, permitindo fechar automaticamente pequenas divergências de horário entre as duas fontes antes do envio.
+### Como acionar
 
-A tabela mostra Origem (**Local** ou **Mikael**), Início, Fim, Projeto, Tarefa e uma coluna **Ajustar** com checkbox nas linhas onde há uma divergência de horário com o registro adjacente.
+Há dois pontos de entrada para a mesclagem:
+
+**Manualmente:** **Automação → 🔀 Mesclar Apontamentos com Mikael** (`Ctrl+M`). Um seletor de data é exibido antes de abrir o diálogo.
+
+**Durante o envio ao SGIWeb:** No diálogo de confirmação de horários (**Automação → Apontar no SGIWeb**, `Ctrl+G`), marque o checkbox **"Ajustar horários com o Mikael"**. A mesclagem é executada antes do envio; se cancelada, o envio também é cancelado. Após aplicar os ajustes, os horários são recalculados e uma segunda confirmação é exibida antes de prosseguir.
+
+### O que acontece
+
+A tela de mesclagem baixa o XLS de apontamentos do Mikael via Playwright (uma janela de browser aparece brevemente e é fechada automaticamente após o download), compara com os apontamentos locais do dia e apresenta uma tabela unificada. O processo permite fechar automaticamente pequenas divergências de horário entre as duas fontes antes do envio.
+
+A tabela mostra Origem (**Local** ou **Mikael**), Início, Fim, Projeto, Tarefa e uma coluna **Ajustar** com checkbox nas linhas onde há divergência de horário com o registro adjacente.
 
 **Regras:**
 - O Mikael é sempre a fonte da verdade — seus horários nunca são alterados.
 - Apenas o apontamento **Local** adjacente se desloca para fechar a divergência.
-- O checkbox vem marcado por padrão quando a divergência é pequena, seja ela um intervalo em aberto ou uma sobreposição entre os dois registros.
-- Divergências grandes (ex.: uma sobreposição extensa ou um intervalo real sem registro) vêm com o checkbox desmarcado, exigindo confirmação manual.
+- Apontamentos locais totalmente englobados por um intervalo do Mikael são silenciosamente removidos da mesclagem (o intervalo do Mikael os substitui).
+- O checkbox vem marcado por padrão quando a divergência é menor que `MIKAEL_GAP_THRESHOLD_MIN` (padrão: 5 minutos), seja ela um intervalo em aberto ou uma sobreposição entre os dois registros.
+- Divergências grandes vêm com o checkbox desmarcado, exigindo confirmação manual.
 - A tabela é uma prévia ao vivo: marcar/desmarcar o checkbox atualiza o horário exibido na hora, sem gravar nada no banco. A gravação só ocorre ao clicar em **"Aplicar ajustes"**.
 - Passe o mouse sobre o checkbox para ver a descrição completa da divergência (horários, duração e os dois lados envolvidos).
+- A operação é idempotente: reaplicar a mesclagem para a mesma data não duplica os intervalos já gravados.
+
+### O que é gravado no banco
+
+Ao confirmar, para cada intervalo do Mikael que ainda não existe no banco, é criado um apontamento com projeto `"Mikael Apontamentos"` e tarefa no formato `"CÓDIGO - Nome do Projeto"`. Para apontamentos locais com ajuste marcado, apenas o início ou o fim é atualizado.
 
 ### Exemplos práticos
 
@@ -266,13 +316,13 @@ A classe `AutomacaoSGIWeb` (em `src/automacao/sgiweb_automacao.py`) orquestra:
 
 ### Exceções de domínio
 
-| Exceção                   | Quando é levantada                                       |
-|---------------------------|----------------------------------------------------------|
-| `AutomacaoError`          | Falha genérica durante a automação                       |
-| `CredenciaisInvalidasError` | Credenciais ausentes ou inválidas no `.env`             |
-| `NenhumApontamentoError`  | Nenhum apontamento encontrado para a data solicitada     |
-| `SobrescritaCanceladaError` | Usuário recusou sobrescrever dados já existentes no SGIWeb |
-| `EnvioCanceladoError`     | Usuário cancelou a confirmação final no NetProject       |
+| Exceção                     | Quando é levantada                                            |
+|-----------------------------|---------------------------------------------------------------|
+| `AutomacaoError`            | Falha genérica durante a automação                            |
+| `CredenciaisInvalidasError` | Credenciais ausentes ou inválidas no `.env`                   |
+| `NenhumApontamentoError`    | Nenhum apontamento encontrado para a data solicitada          |
+| `SobrescritaCanceladaError` | Usuário recusou sobrescrever dados já existentes no SGIWeb    |
+| `EnvioCanceladoError`       | Usuário cancelou a confirmação final no NetProject            |
 
 ---
 
@@ -282,7 +332,9 @@ O `ProjetosTarefasHandler` (em `src/core/projetos_tarefas.py`) baixa XMLs no for
 
 Os XMLs são armazenados em cache em `data/xmls/`. Use `forcar_download=True` para ignorar o cache.
 
-As configurações de projetos e regras de De/Para ficam em `data/config_netproject.json`, gerenciado pelo singleton `ConfigNetProjectHandler`.
+Acesse em **Configurar → 🔄 Atualizar Projetos / Tarefas** (`Ctrl+R`). Um seletor de recurso é exibido (nome do usuário conforme cadastrado no NetProject) e o download ocorre em background via `AtualizarProjetosWorker`.
+
+Para corrigir typos ou renomear pares projeto/tarefa já lançados, use **Configurar → ✏️ Editar Projetos / Tarefas**. A correção é aplicada retroativamente em todos os apontamentos que usam aquele par.
 
 ---
 

@@ -107,6 +107,7 @@ def _apply_indexes(engine: Engine) -> None:
                 "CREATE INDEX IF NOT EXISTS ix_apt_fim_null ON apontamentos(fim) WHERE fim IS NULL"
             )
         )
+        conn.execute(text("CREATE INDEX IF NOT EXISTS ix_excecao_data ON dias_excecao(data)"))
         conn.commit()
 
 

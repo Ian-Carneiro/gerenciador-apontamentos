@@ -36,8 +36,9 @@ class AutomacaoNetProject:
         data = datetime.strptime(data_str, "%d/%m/%Y").date()
 
         apontamentos = []
+        _IGNORADOS = {"Mikael Apontamentos", "Histórico (folha de ponto)"}
         for apt in self.repo.obter_por_dia(data):
-            if getattr(apt, "projeto", None) == "Mikael Apontamentos":
+            if getattr(apt, "projeto", None) in _IGNORADOS:
                 continue
             apontamentos.append(
                 {

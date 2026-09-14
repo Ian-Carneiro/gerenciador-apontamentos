@@ -210,14 +210,16 @@ QComboBox::drop-down {
     subcontrol-position: center right;
 }
 
+
+
 QComboBox::down-arrow {
-    image: none;
-    width: 0;
-    height: 0;
-    border-left: 4px solid transparent;
-    border-right: 4px solid transparent;
-    border-top: 5px solid #a6acb9;
-    margin-right: 8px;
+    image: url(__ICONS_DIR__/arrow_down.svg);
+    width: 10px;
+    height: 6px;
+}
+
+QComboBox::down-arrow:hover {
+    image: url(__ICONS_DIR__/arrow_down_hover.svg);
 }
 
 QComboBox QAbstractItemView {
@@ -225,8 +227,7 @@ QComboBox QAbstractItemView {
     border: 1px solid #4a5360;
     border-radius: 4px;
     padding: 4px;
-    selection-background-color: #586573;
-    selection-color: #5fb3b3;
+    color: #d7dde8;
     outline: none;
 }
 
@@ -243,6 +244,18 @@ QComboBox QAbstractItemView::item:hover {
 QComboBox QAbstractItemView::item:selected {
     background-color: #586573;
     color: #5fb3b3;
+}
+
+/* Estado disabled */
+
+QComboBox:disabled {
+    background-color: #2a3038;
+    border-color: #3a4350;
+    color: #637281;
+}
+
+QComboBox:disabled QAbstractItemView {
+    color: #637281;
 }
 
 /* ── Botões ───────────────────────────────────────────────────────────────── */
@@ -792,6 +805,148 @@ QTableWidget::item:selected {
     background-color: #586573;
     color: #5fb3b3;
 }
+
+/* ── QDoubleSpinBox ───────────────────────────────────────────────────────── */
+
+QDoubleSpinBox {
+    background-color: #242b31;
+    border: 1px solid #4a5360;
+    border-radius: 4px;
+    padding: 6px 8px;
+    color: #d7dde8;
+    min-height: 20px;
+}
+
+QDoubleSpinBox:hover {
+    background-color: #586573;
+}
+
+QDoubleSpinBox:focus {
+    border-color: #5fb3b3;
+    background-color: #2a333b;
+}
+
+QDoubleSpinBox:disabled {
+    color: #637281;
+    background-color: #2a3038;
+    border-color: #3a4350;
+}
+
+QDoubleSpinBox::up-arrow {
+    image: url(__ICONS_DIR__/arrow_up.svg);
+    width: 10px;
+    height: 6px;
+}
+
+QDoubleSpinBox::down-arrow {
+    image: url(__ICONS_DIR__/arrow_down.svg);
+    width: 10px;
+    height: 6px;
+}
+
+QDoubleSpinBox::up-arrow:hover {
+    image: url(__ICONS_DIR__/arrow_up_hover.svg);
+}
+
+QDoubleSpinBox::down-arrow:hover {
+    image: url(__ICONS_DIR__/arrow_down_hover.svg);
+}
+
+
+/* ── QSpinBox ───────────────────────────────────────────────────────── */
+
+QSpinBox {
+    background-color: #242b31;
+    border: 1px solid #4a5360;
+    border-radius: 4px;
+    padding: 6px 8px;
+    color: #d7dde8;
+    min-height: 20px;
+}
+
+QSpinBox:hover {
+    background-color: #586573;
+}
+
+QSpinBox:focus {
+    border-color: #5fb3b3;
+    background-color: #2a333b;
+}
+
+QSpinBox:disabled {
+    color: #637281;
+    background-color: #2a3038;
+    border-color: #3a4350;
+}
+
+QSpinBox::up-arrow {
+    image: url(__ICONS_DIR__/arrow_up.svg);
+    width: 10px;
+    height: 6px;
+}
+
+QSpinBox::down-arrow {
+    image: url(__ICONS_DIR__/arrow_down.svg);
+    width: 10px;
+    height: 6px;
+}
+
+QSpinBox::up-arrow:hover {
+    image: url(__ICONS_DIR__/arrow_up_hover.svg);
+}
+
+QSpinBox::down-arrow:hover {
+    image: url(__ICONS_DIR__/arrow_down_hover.svg);
+}
+
+
+
+
+
+/* ── QDateEdit ────────────────────────────────────────────────────────────── */
+
+QDateEdit {
+    background-color: #242b31;
+    border: 1px solid #4a5360;
+    border-radius: 4px;
+    padding: 6px 8px;
+    color: #d7dde8;
+    min-height: 20px;
+}
+
+QDateEdit:hover {
+    background-color: #586573;
+}
+
+QDateEdit:focus {
+    border-color: #5fb3b3;
+    background-color: #2a333b;
+}
+
+QDateEdit:disabled {
+    color: #637281;
+    background-color: #2a3038;
+    border-color: #3a4350;
+}
+
+QDateEdit::drop-down {
+    border: none;
+    width: 24px;
+    subcontrol-origin: padding;
+    subcontrol-position: center right;
+}
+
+QDateEdit::down-arrow {
+    image: url(__ICONS_DIR__/arrow_down.svg);
+    width: 10px;
+    height: 6px;
+}
+
+QDateEdit::down-arrow:hover {
+    image: url(__ICONS_DIR__/arrow_down_hover.svg);
+}
+
+
 
 /* ── Alerta inline ────────────────────────────────────────────────────────── */
 

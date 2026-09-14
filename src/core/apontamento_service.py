@@ -14,10 +14,12 @@ Responsabilidades:
 
 from __future__ import annotations
 
+from calendar import monthrange
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 
-from src.db.models import Apontamento, ProjetoTarefa
+from src.core.config_jornada_handler import ConfigJornadaHandler
+from src.db.models import Apontamento, DiaExcecao, ProjetoTarefa
 from src.db.repository import (
     ApontamentoAtivoError,
     ApontamentoError,
@@ -93,6 +95,37 @@ class EstadoApp:
         h = int(self.total_horas_hoje)
         m = int((self.total_horas_hoje - h) * 60)
         return f"{h}h {m:02d}min"
+
+
+@dataclass
+class DiaRelatorio:
+    data: date
+    esperado: float
+    trabalhado: float
+    excecao: DiaExcecao | None = None
+
+    @property
+    def saldo(self) -> float:
+        return self.trabalhado - self.esperado
+
+
+@dataclass
+class RelatorioJornada:
+    data_referencia: date
+    trabalhado_hoje: float
+    esperado_hoje: float
+    saldo_mes: float
+    periodo_mes_inicio: date
+    periodo_mes_fim: date
+    saldo_banco: float
+    periodo_banco_inicio: date
+    periodo_banco_fim: date
+    dias_uteis_restantes_banco: int
+    dias_mes: list[DiaRelatorio]
+
+    @property
+    def falta_hoje(self) -> float:
+        return max(0.0, self.esperado_hoje - self.trabalhado_hoje)
 
 
 # ── Service ───────────────────────────────────────────────────────────────────
@@ -546,6 +579,144 @@ class ApontamentoService:
 
     def obter_historico_audit(self, apontamento_id: int):
         return self._repo.obter_historico_audit(apontamento_id)
+
+    # ── Jornada / Relatório ───────────────────────────────────────────────────
+
+    def obter_config_jornada(self):
+        return ConfigJornadaHandler.obter()
+
+    def salvar_config_jornada(self, **kwargs):
+        return ConfigJornadaHandler.salvar(**kwargs)
+
+    def listar_excecoes(self) -> list[DiaExcecao]:
+        return self._repo.listar_excecoes()
+
+    def criar_excecao(self, **kwargs) -> DiaExcecao:
+        return self._repo.criar_excecao(**kwargs)
+
+    def atualizar_excecao(self, excecao_id: int, **kwargs) -> DiaExcecao:
+        return self._repo.atualizar_excecao(excecao_id, **kwargs)
+
+    def deletar_excecao(self, excecao_id: int) -> bool:
+        return self._repo.deletar_excecao(excecao_id)
+
+    def calcular_relatorio(
+        self, data_referencia: date | None = None, sem_segundos: bool = False
+    ) -> RelatorioJornada:
+        hoje_ref = data_referencia or date.today()
+        cfg = ConfigJornadaHandler.obter()
+        dias_trabalho = set(cfg.dias_trabalho)
+
+        excecoes = self._repo.listar_excecoes()
+        excecoes_fixas = {e.data: e for e in excecoes if not e.recorrente}
+        excecoes_recorrentes = {(e.data.month, e.data.day): e for e in excecoes if e.recorrente}
+
+        def excecao_do_dia(dia: date) -> DiaExcecao | None:
+            return excecoes_fixas.get(dia) or excecoes_recorrentes.get((dia.month, dia.day))
+
+        def esperado_dia(dia: date) -> float:
+            if dia.weekday() not in dias_trabalho:
+                return 0.0
+            exc = excecao_do_dia(dia)
+            if exc is None:
+                return cfg.jornada_horas_dia
+            if exc.dia_inteiro:
+                return 0.0
+            return max(0.0, cfg.jornada_horas_dia - exc.horas_abonadas)
+
+        ativo = self._repo.obter_ativo()
+        agora = datetime.now()
+
+        def trabalhado_dia(dia: date, totais: dict[date, float]) -> float:
+            total = totais.get(dia, 0.0)
+            if ativo is not None and ativo.inicio.date() == dia:
+                inicio = (
+                    ativo.inicio.replace(second=0, microsecond=0) if sem_segundos else ativo.inicio
+                )
+                ref = agora.replace(second=0, microsecond=0) if sem_segundos else agora
+                total += (ref - inicio).total_seconds() / 3600
+            return total
+
+        # ── Mês (do dia 1 até a data de referência) ──
+        mes_inicio, mes_fim = self._periodo_banco(cfg.banco_horas_ancora, 1, hoje_ref)
+        totais_mes = self._repo.total_horas_por_dia(mes_inicio, hoje_ref, sem_segundos)
+
+        dias_mes: list[DiaRelatorio] = []
+        saldo_mes = 0.0
+        d = mes_inicio
+        while d <= hoje_ref:
+            esp = esperado_dia(d)
+            trab = trabalhado_dia(d, totais_mes)
+            dias_mes.append(
+                DiaRelatorio(data=d, esperado=esp, trabalhado=trab, excecao=excecao_do_dia(d))
+            )
+            saldo_mes += trab - esp
+            d += timedelta(days=1)
+
+        # ── Banco de horas (período atual, até a data de referência) ──
+        periodo_inicio, periodo_fim = self._periodo_banco(
+            cfg.banco_horas_ancora, cfg.banco_horas_meses, hoje_ref
+        )
+        totais_banco = self._repo.total_horas_por_dia(periodo_inicio, hoje_ref, sem_segundos)
+        saldo_banco = 0.0
+        d = periodo_inicio
+        while d <= hoje_ref:
+            saldo_banco += trabalhado_dia(d, totais_banco) - esperado_dia(d)
+            d += timedelta(days=1)
+
+        dias_uteis_restantes = 0
+        d = hoje_ref + timedelta(days=1)
+        while d <= periodo_fim:
+            if esperado_dia(d) > 0:
+                dias_uteis_restantes += 1
+            d += timedelta(days=1)
+
+        return RelatorioJornada(
+            data_referencia=hoje_ref,
+            trabalhado_hoje=trabalhado_dia(hoje_ref, totais_mes),
+            esperado_hoje=esperado_dia(hoje_ref),
+            saldo_mes=saldo_mes,
+            periodo_mes_inicio=mes_inicio,
+            periodo_mes_fim=mes_fim,
+            saldo_banco=saldo_banco,
+            periodo_banco_inicio=periodo_inicio,
+            periodo_banco_fim=periodo_fim,
+            dias_uteis_restantes_banco=dias_uteis_restantes,
+            dias_mes=dias_mes,
+        )
+
+    @staticmethod
+    def _add_meses(d: date, meses: int) -> date:
+        mes_total = d.month - 1 + meses
+        ano = d.year + mes_total // 12
+        mes = mes_total % 12 + 1
+        dia = min(d.day, monthrange(ano, mes)[1])
+        return date(ano, mes, dia)
+
+    @staticmethod
+    def _fim_periodo(inicio: date, meses: int) -> date:
+        """fim = (dia_corte - 1) do mês seguinte ao último mês do período."""
+        proximo = ApontamentoService._add_meses(inicio, meses)
+        dia = min(proximo.day - 1, monthrange(proximo.year, proximo.month)[1])
+        if dia < 1:
+            # corte no dia 1: fim é o último dia do mês anterior
+            proximo = proximo.replace(day=1) - timedelta(days=1)
+            return proximo
+        return date(proximo.year, proximo.month, dia)
+
+    @classmethod
+    def _periodo_banco(cls, ancora: date, meses: int, referencia: date) -> tuple[date, date]:
+        inicio = ancora
+        fim = cls._fim_periodo(inicio, meses)
+        # Avança se referencia está além do período atual
+        while fim < referencia:
+            inicio = cls._add_meses(inicio, meses)
+            fim = cls._fim_periodo(inicio, meses)
+        # Recua se referencia está antes do período atual
+        while inicio > referencia:
+            inicio = cls._add_meses(inicio, -meses)
+            fim = cls._fim_periodo(inicio, meses)
+        return inicio, fim
 
     # ── Helpers internos ──────────────────────────────────────────────────────
 

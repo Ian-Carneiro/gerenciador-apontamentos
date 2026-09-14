@@ -40,7 +40,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from config import APP_ICON
+from config import APP_ICON, ASSETS_DIR
 from src.core.apontamento_service import ApontamentoService, EstadoApp
 from src.db.models import Apontamento
 from src.db.repository import ApontamentoAtivoError, HorarioInvalidoError, SobreposicaoError
@@ -58,10 +58,12 @@ _QSS_PATH = Path(__file__).parent / "style" / "theme.qss"
 
 
 def _carregar_qss() -> str:
-    if _QSS_PATH.exists():
-        return _QSS_PATH.read_text(encoding="utf-8")
-    logger.warning(f"QSS nao encontrado: {_QSS_PATH}")
-    return ""
+    if not _QSS_PATH.exists():
+        logger.warning(f"QSS nao encontrado: {_QSS_PATH}")
+        return ""
+    css = _QSS_PATH.read_text(encoding="utf-8")
+    icons_dir = (ASSETS_DIR / "icons").resolve().as_posix()
+    return css.replace("__ICONS_DIR__", icons_dir)
 
 
 # -- MainWindow ----------------------------------------------------------------
@@ -218,9 +220,10 @@ class MainWindow(QMainWindow):
         act_hist.triggered.connect(self._abrir_historico)
         menu_ver.addAction(act_hist)
 
-        act_intervalos = QAction("🕳  Intervalos Livres Hoje", self)
-        act_intervalos.triggered.connect(self._mostrar_intervalos_livres)
-        menu_ver.addAction(act_intervalos)
+        act_relatorio = QAction("📊  Relatório de Apontamentos", self)
+        act_relatorio.setShortcut("Ctrl+J")
+        act_relatorio.triggered.connect(self._abrir_relatorio)
+        menu_ver.addAction(act_relatorio)
 
         # Automação
         menu_auto = bar.addMenu("Automacao")
@@ -238,6 +241,10 @@ class MainWindow(QMainWindow):
         act_mesclar.triggered.connect(self._on_mesclar_mikael)
         menu_auto.addAction(act_mesclar)
 
+        act_importar_fp = QAction("📄  Importar Folha de Ponto (PDF)", self)
+        act_importar_fp.triggered.connect(self._on_importar_folha_ponto)
+        menu_auto.addAction(act_importar_fp)
+
         # Configurar
         menu_conf = bar.addMenu("Configurar")
         act_proj = QAction("🔄  Atualizar Projetos / Tarefas", self)
@@ -250,6 +257,12 @@ class MainWindow(QMainWindow):
         act_np_cfg = QAction("✏️  Editar Projetos / Tarefas", self)
         act_np_cfg.triggered.connect(self._on_configuracoes_netproject)
         menu_conf.addAction(act_np_cfg)
+
+        menu_conf.addSeparator()
+
+        act_jornada = QAction("🗓️  Jornada de Trabalho", self)
+        act_jornada.triggered.connect(self._on_configurar_jornada)
+        menu_conf.addAction(act_jornada)
 
         # Favoritos (ação direta na barra, sem submenu — abre o popup de favoritos)
         self._act_favoritos = QAction("★ Favoritos", self)
@@ -430,33 +443,17 @@ class MainWindow(QMainWindow):
         # Recarrega estado após fechar (pode ter editado algo)
         self._restaurar_estado()
 
-    def _mostrar_intervalos_livres(self):
-        from datetime import date
+    def _abrir_relatorio(self):
+        from src.ui.dialogs.relatorio_dialog import RelatorioDialog
 
-        intervalos = self._svc.obter_intervalos_livres(date.today())
+        dlg = RelatorioDialog(self._svc, parent=self)
+        dlg.exec()
 
-        if not intervalos:
-            self._mostrar_info("Nenhum intervalo livre hoje.")
-            return
+    def _on_configurar_jornada(self):
+        from src.ui.dialogs.jornada_config_dialog import JornadaConfigDialog
 
-        linhas = []
-        for ini, fim in intervalos:
-            duracao_s = int((fim - ini).total_seconds())
-            h = duracao_s // 3600
-            m = (duracao_s % 3600) // 60
-            if h > 0:
-                dur = f"{h}h {m:02d}min"
-            elif m > 0:
-                dur = f"{m}min"
-            else:
-                continue  # ignora buracos < 1min
-            linhas.append(f"  {ini.strftime('%H:%M')} - {fim.strftime('%H:%M')}  ({dur})")
-
-        if not linhas:
-            self._mostrar_info("Nenhum intervalo livre significativo hoje.")
-            return
-
-        self._mostrar_info("Intervalos sem apontamento hoje:\n\n" + "\n".join(linhas))
+        dlg = JornadaConfigDialog(self._svc, parent=self)
+        dlg.exec()
 
     def _on_automacao_netproject(self):
         from src.automacao.exceptions import (
@@ -608,6 +605,48 @@ class MainWindow(QMainWindow):
         if self._abrir_mesclar_mikael(data_str):
             self._restaurar_estado()
             self._mostrar_toast("✅ Apontamentos mesclados com sucesso")
+
+    def _on_importar_folha_ponto(self):
+        from PySide6.QtWidgets import QFileDialog
+
+        from src.automacao.folha_ponto_import import construir_registros
+        from src.ui.dialogs.folha_ponto_dialog import ImportarFolhaPontoDialog
+        from src.ui.workers import ImportarFolhaPontoWorker
+
+        caminhos, _ = QFileDialog.getOpenFileNames(
+            self, "Selecionar Espelho(s) de Ponto", "", "PDF (*.pdf)"
+        )
+        if not caminhos:
+            return
+
+        progresso = QProgressDialog("Lendo folha(s) de ponto...", None, 0, 0, self)
+        progresso.setWindowTitle("Importando Folha de Ponto")
+        progresso.setWindowModality(Qt.WindowModality.WindowModal)
+        progresso.setCancelButton(None)
+        progresso.setMinimumDuration(0)
+        progresso.show()
+
+        self._worker_folha_ponto = ImportarFolhaPontoWorker(caminhos, parent=self)
+
+        def on_concluido(dados):
+            progresso.close()
+            if not dados:
+                self._mostrar_info("Nenhum apontamento encontrado nos PDFs selecionados.")
+                return
+
+            registros = construir_registros(dados, self._svc._repo)
+            dlg = ImportarFolhaPontoDialog(registros, self._svc._repo, parent=self)
+            if dlg.exec() == ImportarFolhaPontoDialog.DialogCode.Accepted:
+                self._restaurar_estado()
+                self._mostrar_toast("✅ Folha de ponto importada com sucesso")
+
+        def on_erro(msg):
+            progresso.close()
+            self._mostrar_erro(f"Erro ao ler folha de ponto:\n{msg}")
+
+        self._worker_folha_ponto.concluido.connect(on_concluido)
+        self._worker_folha_ponto.erro.connect(on_erro)
+        self._worker_folha_ponto.start()
 
     def _on_atualizar_projetos(self):
         from src.core.projetos_tarefas import ProjetosTarefasHandler

@@ -13,12 +13,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date, datetime
+from decimal import ROUND_HALF_UP, Decimal
+from itertools import pairwise
 
 from sqlalchemy import and_, or_, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from src.db.database import get_session
-from src.db.models import Apontamento, ApontamentoAudit, ProjetoTarefa
+from src.db.models import Apontamento, ApontamentoAudit, DiaExcecao, ProjetoTarefa
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -537,6 +540,113 @@ class ApontamentoRepository:
         """Total de horas trabalhadas num dia (apenas apontamentos finalizados)."""
         apts = self.obter_por_dia(dia)
         return sum(a.horas or 0.0 for a in apts if a.fim is not None)
+
+    def total_horas_por_dia(
+        self, data_inicio: date, data_fim: date, sem_segundos: bool = False
+    ) -> dict[date, float]:
+        """Soma de horas de apontamentos finalizados, agrupada por dia, no intervalo."""
+        apts = self.buscar(data_inicio=data_inicio, data_fim=data_fim)
+
+        por_dia: dict[date, list] = {}
+        for apt in apts:
+            if apt.fim is None:
+                continue
+            d = apt.inicio.date()
+            por_dia.setdefault(d, []).append(apt)
+
+        totais: dict[date, float] = {}
+        for d, apts_dia in por_dia.items():
+            apts_dia.sort(key=lambda a: a.inicio)
+
+            if not sem_segundos:
+                totais[d] = sum(apt.horas or 0.0 for apt in apts_dia)
+                continue
+
+            # 1. Consolida apontamentos contínuos em blocos
+            blocos = []
+            ini = apts_dia[0].inicio
+            fim = apts_dia[0].fim
+            for anterior, atual in pairwise(apts_dia):
+                if anterior.fim == atual.inicio:
+                    fim = atual.fim
+                else:
+                    blocos.append((ini, fim))
+                    ini = atual.inicio
+                    fim = atual.fim
+            blocos.append((ini, fim))
+
+            # 2. Trunca segundos apenas no início e fim de cada bloco, depois round2
+            def round2(v):
+                return float(Decimal(str(v)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
+
+            horas = sum(
+                round2(
+                    (
+                        f.replace(second=0, microsecond=0) - i.replace(second=0, microsecond=0)
+                    ).total_seconds()
+                    / 3600
+                )
+                for i, f in blocos
+            )
+            totais[d] = horas
+
+        return totais
+
+    # ── Dias de Exceção (feriado / dayoff / atestado) ────────────────────────
+
+    def criar_excecao(
+        self,
+        tipo: str,
+        data: date,
+        recorrente: bool = False,
+        horas_abonadas: float | None = None,
+        observacao: str = "",
+    ) -> DiaExcecao:
+        if tipo not in DiaExcecao.TIPOS_VALIDOS:
+            raise ValueError(f"Tipo de exceção inválido: {tipo!r}")
+        with get_session() as s:
+            exc = DiaExcecao(
+                tipo=tipo,
+                recorrente=recorrente,
+                data=data,
+                horas_abonadas=horas_abonadas,
+                observacao=observacao.strip(),
+            )
+            s.add(exc)
+            try:
+                s.flush()
+            except IntegrityError as e:
+                raise ApontamentoError("Já existe uma exceção cadastrada para esta data.") from e
+            logger.info(f"📅 Exceção criada: {exc}")
+            return exc
+
+    def atualizar_excecao(self, excecao_id: int, **campos) -> DiaExcecao:
+        with get_session() as s:
+            exc = s.get(DiaExcecao, excecao_id)
+            if exc is None:
+                raise ApontamentoError(f"Exceção id={excecao_id} não encontrada.")
+            for campo, valor in campos.items():
+                setattr(exc, campo, valor)
+            try:
+                s.flush()
+            except IntegrityError as e:
+                raise ApontamentoError("Já existe uma exceção cadastrada para esta data.") from e
+            logger.info(f"✏️  Exceção atualizada: {exc}")
+            return exc
+
+    def deletar_excecao(self, excecao_id: int) -> bool:
+        with get_session() as s:
+            exc = s.get(DiaExcecao, excecao_id)
+            if exc is None:
+                return False
+            s.delete(exc)
+            logger.info(f"🗑  Exceção removida: id={excecao_id}")
+            return True
+
+    def listar_excecoes(self) -> list[DiaExcecao]:
+        with get_session() as s:
+            stmt = select(DiaExcecao).order_by(DiaExcecao.data)
+            return list(s.scalars(stmt).all())
 
     def obter_historico_audit(self, apontamento_id: int) -> list[ApontamentoAudit]:
         with get_session() as s:

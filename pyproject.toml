@@ -17,6 +17,7 @@ dependencies = [
     "pandas",
     "openpyxl",
     "xlrd>=2.0",
+    "pdfplumber",
 ]
 
 [project.optional-dependencies]

@@ -37,6 +37,7 @@ def main():
 
     # 3. Qt
     app = QApplication(sys.argv)
+    app.setStyle("Fusion")
     app.setApplicationName("Apontador de Horas")
     app.setApplicationVersion("5.0.0")
 

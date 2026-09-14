@@ -8,6 +8,8 @@ Classes:
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from PySide6.QtCore import QThread, Signal
 
 
@@ -37,6 +39,28 @@ class AtualizarProjetosWorker(QThread):
     def run(self):
         try:
             dados = self._handler.atualizar_projetos_tarefas(self._recurso, forcar_download=True)
+            self.concluido.emit(dados)
+        except Exception as e:
+            self.erro.emit(str(e))
+
+
+class ImportarFolhaPontoWorker(QThread):
+    """Lê e parseia os PDFs do Espelho de Ponto em background."""
+
+    concluido = Signal(dict)
+    erro = Signal(str)
+
+    def __init__(self, caminhos: list[str], parent=None):
+        super().__init__(parent)
+        self._caminhos = caminhos
+
+    def run(self):
+        from src.automacao.folha_ponto_import import parse_espelho_ponto
+
+        try:
+            dados = {}
+            for caminho in self._caminhos:
+                dados.update(parse_espelho_ponto(Path(caminho)))
             self.concluido.emit(dados)
         except Exception as e:
             self.erro.emit(str(e))
