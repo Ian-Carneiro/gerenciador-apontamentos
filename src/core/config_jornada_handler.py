@@ -22,7 +22,7 @@ _PADRAO = {
     "jornada_horas_dia": 8.0,
     "banco_horas_meses": 4,
     "banco_horas_dia_corte": 26,  # período: dia_corte/mês até (corte-1)/mês+N
-    "banco_horas_ancora": None,  # data ISO, ex: "2026-07-26"
+    "banco_horas_ancora": "2026-07-26",  # data ISO, ex: "2026-07-26"
     "dias_trabalho": [0, 1, 2, 3, 4],
 }
 
