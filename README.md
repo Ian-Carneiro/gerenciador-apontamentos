@@ -12,6 +12,9 @@ Aplicação desktop para registro, gerenciamento e envio automático de apontame
 - Regras de De/Para configuráveis para normalização de nomes de projetos/tarefas
 - Automação de envio para NetProject e SGIWeb via Playwright (browser headful)
 - Mesclagem de apontamentos locais com o sistema Mikael, com ajuste automático de divergências de horário
+- Importação de apontamentos históricos a partir do PDF do Espelho de Ponto (SGIWeb), com prévia e detecção de duplicatas
+- Configuração de jornada de trabalho (horas/dia, dias úteis, período do banco de horas) e cadastro de dias de exceção (feriado, dayoff, atestado)
+- Relatório de Apontamentos: saldo do dia, do mês e do banco de horas, com detalhamento diário
 - Favoritos: acesso rápido aos pares projeto/tarefa mais usados nos últimos 7 dias
 - Suporte a múltiplos monitores (browser abre no monitor secundário, se disponível)
 - Log rotativo com saída colorida no console e arquivo em `logs/app.log`
@@ -33,6 +36,7 @@ Aplicação desktop para registro, gerenciamento e envio automático de apontame
 ├── data/
 │   ├── apontamentos.db              # Banco SQLite
 │   ├── config_netproject.json       # Projetos NetProject e regras De/Para
+│   ├── config_jornada.json          # Configuração de jornada e banco de horas
 │   └── xmls/                        # XMLs baixados do NetProject (cache local)
 ├── logs/
 │   └── app.log
@@ -40,6 +44,7 @@ Aplicação desktop para registro, gerenciamento e envio automático de apontame
 ├── src/
 │   ├── automacao/
 │   │   ├── exceptions.py            # Exceções de domínio da automação
+│   │   ├── folha_ponto_import.py    # Parser do PDF do Espelho de Ponto (SGIWeb)
 │   │   ├── mesclar_apontamentos.py  # Lógica de mesclagem, gaps e ajustes com Mikael
 │   │   ├── mikael_automacao.py      # Download e parse do XLS do Mikael via Playwright
 │   │   ├── netproject_automacao.py  # Orquestrador da automação NetProject
@@ -49,12 +54,13 @@ Aplicação desktop para registro, gerenciamento e envio automático de apontame
 │   │   └── sgiweb_pages.py          # Page Objects do SGIWeb
 │   ├── core/
 │   │   ├── apontamento_service.py   # Serviço principal (regras de negócio)
+│   │   ├── config_jornada_handler.py     # Singleton de configuração de jornada/banco de horas
 │   │   ├── config_netproject_handler.py  # Singleton de configuração NetProject
 │   │   ├── credentials_validator.py # Validação de credenciais do .env
 │   │   └── projetos_tarefas.py      # Download e parsing de XMLs do NetProject
 │   ├── db/
 │   │   ├── database.py              # Engine SQLAlchemy, sessões e init_db()
-│   │   ├── models.py                # Modelos ORM (Apontamento, Audit, ProjetoTarefa, DePara)
+│   │   ├── models.py                # Modelos ORM (Apontamento, Audit, ProjetoTarefa, DePara, DiaExcecao)
 │   │   └── repository.py            # Repositório de acesso a dados
 │   ├── ui/
 │   │   ├── dialogs/
@@ -63,9 +69,12 @@ Aplicação desktop para registro, gerenciamento e envio automático de apontame
 │   │   │   ├── confirmacao_dialogs.py   # Confirmação visual para NetProject e SGIWeb
 │   │   │   ├── dividir_dialog.py        # Dividir apontamento em dois no horário de corte
 │   │   │   ├── editar_dialog.py         # Editar projeto, tarefa e nota
+│   │   │   ├── folha_ponto_dialog.py    # Prévia e importação de apontamentos do Espelho de Ponto
 │   │   │   ├── historico_dialog.py      # Histórico de apontamentos agrupado por dia
+│   │   │   ├── jornada_config_dialog.py # Config. de jornada, banco de horas e dias de exceção
 │   │   │   ├── mesclar_dialog.py        # Mesclagem e ajuste com Mikael
 │   │   │   ├── projetos_tarefas_dialog.py # Editar/renomear pares projeto/tarefa no banco
+│   │   │   ├── relatorio_dialog.py      # Relatório de horas: hoje, mês e banco de horas
 │   │   │   └── utils_dialogs.py         # Diálogos utilitários (pedir_data, selecionar_recurso)
 │   │   ├── main_window.py           # Janela principal (PySide6)
 │   │   ├── messagebox_utils.py      # Wrappers de QMessageBox (showinfo, askyesno, etc.)
@@ -73,7 +82,7 @@ Aplicação desktop para registro, gerenciamento e envio automático de apontame
 │   │   │   ├── theme.qss            # Folha de estilos global (QSS)
 │   │   │   └── tokens.py            # Paleta de cores e constantes visuais (Mariana)
 │   │   ├── ui_helpers.py            # Helpers de UI reutilizáveis (centralizar_janela, truncar_texto)
-│   │   └── workers.py               # QThread workers para operações em background
+│   │   └── workers.py               # QThread workers (atualização de projetos, importação de folha de ponto)
 │   │   └── widgets/
 │   │       ├── favoritos_popup.py   # Popup de seleção rápida de favoritos
 │   │       ├── filterable_combo.py  # Campo editável com dropdown filtrado (sem QComboBox)
@@ -170,6 +179,7 @@ O banco usa SQLite com WAL mode, foreign keys e índices de performance aplicado
 | `apontamentos_audit` | Histórico imutável de cada alteração por campo               |
 | `projetos_tarefas`   | Cache local dos projetos/tarefas baixados do NetProject      |
 | `depara`             | Regras de substituição de nomes de projeto/tarefa            |
+| `dias_excecao`       | Feriados, dayoffs e atestados que abatem a jornada esperada  |
 
 Um apontamento com `fim IS NULL` indica sessão em execução. No máximo um por vez.
 
@@ -207,7 +217,7 @@ Já existe uma tarefa em execução. Selecione o novo Projeto/Tarefa e informe s
 Com uma tarefa em execução, opcionalmente informe o **Fim** (senão usa o horário atual) e/ou uma **Nota**. Clique em **Parar Apontamento**.
 → Toast "Parado: ERP › Dev (2h 15min)". O botão "Parar Apontamento" é desabilitado e o principal volta a exibir "Iniciar / Registrar".
 
-> Preencher só o **Fim** sem o **Início** é bloqueado com o aviso "Preencha também o Início quando informar o Fim". Um intervalo que conflita com um apontamento já existente é rejeitado com o horário e a tarefa em conflito, sugerindo consultar **Visualizar → Intervalos Livres Hoje**.
+> Preencher só o **Fim** sem o **Início** é bloqueado com o aviso "Preencha também o Início quando informar o Fim". Um intervalo que conflita com um apontamento já existente é rejeitado com o horário e a tarefa em conflito.
 
 ---
 
@@ -291,6 +301,43 @@ Local vai até 15:08:46, mas o Mikael começou às 13:57:44 (71min de sobreposi�
 **4. Intervalo após o Mikael (retomada do trabalho Local)**
 Mikael termina 13:59:18, o próximo apontamento Local só começa às 14:04:00 (intervalo de 4min42s).
 → Se pequeno o suficiente, checkbox vem marcado. Tabela mostra o Início do Local recuado para `13:59:18`, alinhando com o fim do Mikael.
+
+---
+
+## Jornada de Trabalho e Relatório
+
+### Configuração
+
+Acesse em **Configurar → 🗓️ Jornada de Trabalho**. O diálogo tem duas partes:
+
+- **Jornada**: horas esperadas por dia, dias da semana considerados úteis, e a âncora do banco de horas (data de início de um período — o dia do mês define o "corte" e deve estar entre 1 e 28). A quantidade de meses por período (padrão: 4) determina o tamanho do ciclo do banco de horas; um preview mostra os próximos períodos gerados a partir da âncora escolhida.
+- **Dias de exceção**: feriados, dayoffs e atestados que abatem a jornada esperada. Podem ser **fixos** (uma data específica) ou **recorrentes** (repetem todo ano, considerando só dia/mês). Cada exceção abona o dia inteiro ou uma quantidade parcial de horas.
+
+Tudo é persistido em `data/config_jornada.json` (config de jornada) e na tabela `dias_excecao` (exceções).
+
+### Relatório de Apontamentos
+
+Acesse em **Visualizar → 📊 Relatório de Apontamentos** (`Ctrl+J`). Mostra três cartões — **Hoje**, **Mês** e **Banco de Horas** — com horas trabalhadas, saldo e (no banco de horas) dias úteis restantes até o fim do período. Uma tabela detalha esperado/trabalhado/saldo dia a dia dentro do mês corrente.
+
+- A **data de referência** pode ser alterada para consultar o relatório em qualquer dia.
+- **Ignorar segundos** consolida apontamentos contínuos em blocos antes de arredondar, evitando ruído de segundos na soma.
+- **Horas em decimal** alterna o formato entre `Xh MMmin` e `X.XXh`.
+- Dias com exceção cadastrada aparecem marcados na tabela (🔁 recorrente, • fixa).
+
+---
+
+## Importação de Folha de Ponto (Espelho de Ponto)
+
+Acesse em **Automação → 📄 Importar Folha de Ponto (PDF)**. Permite selecionar um ou mais PDFs do Espelho de Ponto do SGIWeb e importar os horários como apontamentos históricos.
+
+### Como funciona
+
+1. O(s) PDF(s) são lidos em background (`ImportarFolhaPontoWorker`), extraindo pares de entrada/saída por dia via `pdfplumber`.
+2. Uma prévia é exibida com uma linha por par entrada/saída, mostrando data, horários e duração, cada uma com um checkbox de importação.
+3. Dias que já possuem apontamento local no banco vêm com o checkbox **desmarcado** por padrão, para evitar duplicidade — o usuário pode marcar manualmente para sobrescrever.
+4. Ao confirmar, cada linha marcada é gravada como um apontamento retroativo com projeto `"Histórico (folha de ponto)"`, ignorando checagem de sobreposição.
+
+> Apontamentos importados por esta via (assim como os do Mikael) são ignorados automaticamente pelo envio ao NetProject.
 
 ---
 
