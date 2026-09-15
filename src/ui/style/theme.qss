@@ -552,6 +552,22 @@ QCheckBox::indicator:hover {
 QCheckBox::indicator:checked {
     background: #5fb3b3;
     border-color: #5fb3b3;
+    image: url(__ICONS_DIR__/check.svg);
+}
+
+QCheckBox:disabled {
+    color: #637281;
+}
+
+QCheckBox::indicator:disabled {
+    background: #2a3038;
+    border-color: #3a4350;
+}
+
+QCheckBox::indicator:checked:disabled {
+    background: #3a4350;
+    border-color: #3a4350;
+    image: url(__ICONS_DIR__/check_disabled.svg);
 }
 
 /* ── QRadioButton ─────────────────────────────────────────────────────────── */

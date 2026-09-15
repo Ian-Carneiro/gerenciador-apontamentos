@@ -39,6 +39,40 @@ _TIPOS_LABEL = {
     DiaExcecao.ATESTADO: "Atestado",
 }
 
+_SVG_HINT = """
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+     fill="none" stroke="#8a93a3" stroke-width="1.8"
+     stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="9"/>
+    <line x1="12" y1="11" x2="12" y2="16.5"/>
+    <circle cx="12" cy="7.4" r="1" fill="#8a93a3" stroke="none"/>
+</svg>"""
+
+
+def _label_com_hint(texto: str, tooltip: str) -> QWidget:
+    """Label de formulário com um ícone de hint (ⓘ) ao lado, exibindo `tooltip` no hover."""
+    from PySide6.QtGui import QPixmap
+
+    container = QWidget()
+    lay = QHBoxLayout(container)
+    lay.setContentsMargins(0, 0, 0, 0)
+    lay.setSpacing(4)
+    lay.addWidget(QLabel(texto))
+
+    pixmap = QPixmap()
+    pixmap.loadFromData(_SVG_HINT.encode("utf-8"), "SVG")  # type: ignore[arg-type]
+    lbl_icone = QLabel()
+    lbl_icone.setPixmap(
+        pixmap.scaled(
+            14, 14, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation
+        )
+    )
+    lbl_icone.setToolTip(tooltip)
+    lbl_icone.setCursor(Qt.CursorShape.WhatsThisCursor)
+    lay.addWidget(lbl_icone)
+    lay.addStretch()
+    return container
+
 
 def _ymd(d: date) -> tuple[int, int, int]:
     return d.year, d.month, d.day
@@ -153,11 +187,15 @@ class JornadaConfigDialog(QDialog):
         self._inicio_periodo = QDateEdit(QDate.currentDate())
         self._inicio_periodo.setCalendarPopup(True)
         self._inicio_periodo.setDisplayFormat("dd/MM/yyyy")
-        self._inicio_periodo.setToolTip(
-            "Qualquer data de início de período conhecido — os demais são calculados a partir dela"
+        tooltip_ancora = (
+            "Qualquer data de início de período já conhecido — os demais são calculados "
+            "automaticamente a partir dela"
         )
+        self._inicio_periodo.setToolTip(tooltip_ancora)
         self._inicio_periodo.dateChanged.connect(self._atualizar_preview_periodos)
-        form.addRow("Início do período atual:", self._inicio_periodo)
+        form.addRow(
+            _label_com_hint("Data-âncora do banco de horas:", tooltip_ancora), self._inicio_periodo
+        )
 
         layout.addLayout(form)
 
@@ -315,6 +353,7 @@ class _ExcecaoDialog(QDialog):
         self._combo_tipo = QComboBox()
         for valor, label in _TIPOS_LABEL.items():
             self._combo_tipo.addItem(label, valor)
+        self._combo_tipo.currentIndexChanged.connect(self._on_tipo_changed)
         form.addRow("Tipo:", self._combo_tipo)
 
         self._chk_recorrente = QCheckBox("Repete todo ano (feriado fixo)")
@@ -342,6 +381,8 @@ class _ExcecaoDialog(QDialog):
         form.addRow("Observação:", self._obs)
         layout.addLayout(form)
 
+        self._on_tipo_changed()
+
         if excecao is not None:
             self._preencher(excecao)
 
@@ -354,6 +395,17 @@ class _ExcecaoDialog(QDialog):
         row.addWidget(btn_ok)
         row.addWidget(btn_cancel)
         layout.addLayout(row)
+
+    def _on_tipo_changed(self):
+        permite_parcial = self._combo_tipo.currentData() == DiaExcecao.ATESTADO
+
+        self._chk_dia_inteiro.setEnabled(permite_parcial)
+        if not permite_parcial:
+            self._chk_dia_inteiro.setChecked(True)
+
+        self._chk_recorrente.setEnabled(permite_parcial)
+        if not permite_parcial:
+            self._chk_recorrente.setChecked(True)
 
     def _preencher(self, exc: DiaExcecao):
         idx = self._combo_tipo.findData(exc.tipo)
