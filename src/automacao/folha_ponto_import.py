@@ -27,7 +27,14 @@ def parse_espelho_ponto(caminho: Path) -> dict[str, list[tuple[str, str]]]:
     Ignora linhas de "Erro no dia ..." e dias sem marcação.
     """
     with pdfplumber.open(caminho) as pdf:
-        texto_p1 = pdf.pages[0].extract_text()
+        texto_p1 = pdf.pages[0].extract_text() or ""
+        if not texto_p1.strip():
+            raise ValueError(
+                "PDF sem camada de texto (fontes provavelmente vetorizadas/outline "
+                "na exportação). Gere o Espelho de Ponto novamente a partir do "
+                "navegador (Ctrl+P > Salvar como PDF) sem usar impressora virtual "
+                "ou redução de tamanho de arquivo."
+            )
         periodo = _PERIODO_RE.search(texto_p1)
         if not periodo:
             raise ValueError("Não foi possível identificar o período no PDF.")

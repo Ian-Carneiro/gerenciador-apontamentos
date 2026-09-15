@@ -140,6 +140,10 @@ class ApontamentoService:
     def __init__(self, repo: ApontamentoRepository | None = None):
         self._repo = repo or ApontamentoRepository()
 
+    @property
+    def repo(self):
+        return self._repo
+
     # ── Fluxo principal: Iniciar / Registrar ──────────────────────────────────
 
     def iniciar_ou_registrar(

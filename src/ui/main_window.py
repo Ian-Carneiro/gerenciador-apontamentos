@@ -81,7 +81,9 @@ class MainWindow(QMainWindow):
         self._centralizar()
 
         # Aplica QSS global
-        QApplication.instance().setStyleSheet(_carregar_qss())
+        app = QApplication.instance()
+        if isinstance(app, QApplication):
+            app.setStyleSheet(_carregar_qss())
 
         self._build_ui()
         self._build_menu()
@@ -97,7 +99,7 @@ class MainWindow(QMainWindow):
         root.setSpacing(0)
 
         # Cabeçalho
-        root.addWidget(self._build_header())
+        root.addWidget(MainWindow._build_header())
 
         # Painel principal
         root.addWidget(self._build_main_panel(), stretch=1)
@@ -112,7 +114,8 @@ class MainWindow(QMainWindow):
         geo.moveCenter(tela.center())
         self.move(geo.topLeft())
 
-    def _build_header(self) -> QWidget:
+    @staticmethod
+    def _build_header() -> QWidget:
         frame = QFrame()
         frame.setObjectName("appHeader")
         frame.setFixedHeight(52)
@@ -429,7 +432,7 @@ class MainWindow(QMainWindow):
     def _atualizar_total_hoje(self):
         from datetime import date
 
-        total = self._svc._repo.total_horas_dia(date.today())
+        total = self._svc.repo.total_horas_dia(date.today())
         self._status_bar.set_total_hoje(total)
 
     # -- Menus: ações --------------------------------------------------------─
@@ -470,7 +473,7 @@ class MainWindow(QMainWindow):
         if not data_str:
             return
 
-        automacao = AutomacaoNetProject(self._svc._repo)
+        automacao = AutomacaoNetProject(self._svc.repo)
 
         try:
             apontamentos = automacao.obter_apontamentos_dia(data_str)
@@ -518,12 +521,12 @@ class MainWindow(QMainWindow):
         from src.ui.dialogs.mesclar_dialog import MesclarApontamentosDialog
 
         data = datetime.strptime(data_str, "%d/%m/%Y").date()
-        apontamentos_db = self._svc._repo.obter_por_dia(data)
+        apontamentos_db = self._svc.repo.obter_por_dia(data)
 
         dlg = MesclarApontamentosDialog(
             apontamentos_db=apontamentos_db,
             data_str=data_str,
-            repo=self._svc._repo,
+            repo=self._svc.repo,
             parent=self,
         )
         return dlg.exec() == MesclarApontamentosDialog.DialogCode.Accepted
@@ -543,7 +546,7 @@ class MainWindow(QMainWindow):
         if not data_str:
             return
 
-        automacao = AutomacaoSGIWeb(self._svc._repo)
+        automacao = AutomacaoSGIWeb(self._svc.repo)
 
         try:
             horarios = automacao.obter_horarios_dia(data_str)
@@ -619,7 +622,7 @@ class MainWindow(QMainWindow):
         if not caminhos:
             return
 
-        progresso = QProgressDialog("Lendo folha(s) de ponto...", None, 0, 0, self)
+        progresso = QProgressDialog("Lendo folha(s) de ponto...", "", 0, 0, self)
         progresso.setWindowTitle("Importando Folha de Ponto")
         progresso.setWindowModality(Qt.WindowModality.WindowModal)
         progresso.setCancelButton(None)
@@ -634,8 +637,8 @@ class MainWindow(QMainWindow):
                 self._mostrar_info("Nenhum apontamento encontrado nos PDFs selecionados.")
                 return
 
-            registros = construir_registros(dados, self._svc._repo)
-            dlg = ImportarFolhaPontoDialog(registros, self._svc._repo, parent=self)
+            registros = construir_registros(dados, self._svc.repo)
+            dlg = ImportarFolhaPontoDialog(registros, self._svc.repo, parent=self)
             if dlg.exec() == ImportarFolhaPontoDialog.DialogCode.Accepted:
                 self._restaurar_estado()
                 self._mostrar_toast("✅ Folha de ponto importada com sucesso")
@@ -664,7 +667,7 @@ class MainWindow(QMainWindow):
             return
 
         progresso = QProgressDialog(
-            "Baixando e processando projetos/tarefas do NetProject...", None, 0, 0, self
+            "Baixando e processando projetos/tarefas do NetProject...", "", 0, 0, self
         )
         progresso.setWindowTitle("Atualizando Projetos/Tarefas")
         progresso.setWindowModality(Qt.WindowModality.WindowModal)
@@ -679,7 +682,7 @@ class MainWindow(QMainWindow):
             if not dados:
                 self._mostrar_info("Nenhum projeto/tarefa encontrado para o recurso configurado.")
                 return
-            count = self._svc._repo.sincronizar_projetos_tarefas(dados)
+            count = self._svc.repo.sincronizar_projetos_tarefas(dados)
             self._restaurar_estado()
             self._mostrar_toast(f"🔄 {count} projetos/tarefas atualizados")
 
@@ -694,7 +697,7 @@ class MainWindow(QMainWindow):
     def _on_configuracoes_netproject(self):
         from src.ui.dialogs.projetos_tarefas_dialog import ProjetosTarefasDialog
 
-        dlg = ProjetosTarefasDialog(self._svc._repo, parent=self)
+        dlg = ProjetosTarefasDialog(self._svc.repo, parent=self)
         dlg.exec()
         self._restaurar_estado()
 

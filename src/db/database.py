@@ -20,6 +20,7 @@ from sqlalchemy import create_engine, event, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
+import config
 from src.db.models import Base
 
 # ── Localização do banco ───────────────────────────────────────────────────────
@@ -28,8 +29,6 @@ from src.db.models import Base
 def _db_path() -> Path:
     """Retorna o caminho do arquivo SQLite baseado em config.py (se disponível)."""
     try:
-        import config
-
         db_path = config.DATA_DIR / "apontamentos.db"
     except ImportError:
         # Fallback para testes ou execução isolada
