@@ -35,7 +35,7 @@ class ProjetosTarefasHandler:
             logger.info(f"🔍 Processando tarefas para recurso: {recurso}")
             todas_tarefas = []
 
-            for nome_proj, _codigo in config_netproject.projetos_netproject.items():
+            for nome_proj, _codigo in config_netproject.projetos_netproject().items():
                 xml_path = self.dir_xmls / f"{nome_proj}.xml"
                 if not xml_path.exists():
                     logger.warning(f"⚠️ XML não encontrado: {xml_path}")
@@ -77,7 +77,7 @@ class ProjetosTarefasHandler:
 
     def _baixar_xmls(self, forcar: bool = False):
         """Baixa XMLs dos projetos NetProject"""
-        for nome_proj, codigo in config_netproject.projetos_netproject.items():
+        for nome_proj, codigo in config_netproject.projetos_netproject().items():
             xml_path = self.dir_xmls / f"{nome_proj}.xml"
 
             if xml_path.exists() and not forcar:

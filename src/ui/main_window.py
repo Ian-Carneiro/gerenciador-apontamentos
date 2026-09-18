@@ -689,7 +689,7 @@ class MainWindow(QMainWindow):
 
     def _on_atualizar_projetos(self):
         """Pede o recurso, baixa projetos/tarefas do NetProject em background e sincroniza no banco."""
-        from src.core.projetos_tarefas import ProjetosTarefasHandler
+        from src.automacao.projetos_tarefas import ProjetosTarefasHandler
         from src.ui.dialogs.utils_dialogs import selecionar_recurso_netproject
 
         handler = ProjetosTarefasHandler()
