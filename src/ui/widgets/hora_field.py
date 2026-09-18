@@ -43,6 +43,7 @@ class HoraField(QWidget):
     """Label + QLineEdit monospace para um horário HH:MM:SS."""
 
     def __init__(self, label: str, parent=None):
+        """Monta o label (opcional) + QLineEdit com máscara automática de HH:MM:SS."""
         super().__init__(parent)
         layout = QHBoxLayout(self)
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
@@ -70,12 +71,15 @@ class HoraField(QWidget):
         return parse_hora(self.edit.text(), data_base)
 
     def limpar(self):
+        """Esvazia o campo."""
         self.edit.clear()
 
     def set_valor(self, dt: datetime):
+        """Preenche o campo com o horário de `dt`, formatado como HH:MM:SS."""
         self.edit.setText(dt.strftime("%H:%M:%S"))
 
     def setEnabled(self, enabled: bool):
+        """Habilita/desabilita o widget e o QLineEdit interno."""
         super().setEnabled(enabled)
         self.edit.setEnabled(enabled)
 

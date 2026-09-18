@@ -21,6 +21,7 @@ from src.ui.widgets.filterable_combo import FilterableComboBox
 
 
 def pedir_data(titulo: str = "Selecionar Data", parent: QWidget | None = None) -> str | None:
+    """Diálogo simples com QDateEdit; retorna a data escolhida como "dd/MM/yyyy", ou None se cancelado."""
     dlg = QDialog(parent)
     dlg.setWindowTitle(titulo)
     dlg.setModal(True)
@@ -84,6 +85,7 @@ def selecionar_recurso_netproject(recursos: list[str], parent: QWidget | None = 
 
 
 def _botoes(on_confirmar, on_cancelar) -> QHBoxLayout:
+    """Monta a linha de botões Confirmar/Cancelar, centralizada."""
     row = QHBoxLayout()
     row.addStretch()
 

@@ -111,11 +111,11 @@ class ConfigNetProjectHandler:
         return self._depara_tarefas.copy()
 
     def aplicar_projeto(self, valor: str) -> str:
-        """Aplica de/para em projeto (com cache)"""
+        """Aplica a regra de/para em projeto, se houver; senão retorna o valor original."""
         return self._depara_projetos.get(valor, valor)
 
     def aplicar_tarefa(self, valor: str) -> str:
-        """Aplica de/para em tarefa (com cache)"""
+        """Aplica a regra de/para em tarefa, se houver; senão retorna o valor original."""
         return self._depara_tarefas.get(valor, valor)
 
     def recarregar(self):

@@ -15,9 +15,11 @@ class BasePage:
     """Classe base para Page Objects (Playwright)"""
 
     def __init__(self, page: Page):
+        """Guarda a referência à Page do Playwright usada pelas subclasses."""
         self.page = page
 
     def sleep(self, seconds: float = config.TIMEOUT_CURTO):
+        """Pausa a execução por `seconds` segundos (page.wait_for_timeout)."""
         self.page.wait_for_timeout(seconds * 1000)
 
 

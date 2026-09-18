@@ -58,6 +58,7 @@ _QSS_PATH = Path(__file__).parent / "style" / "theme.qss"
 
 
 def _carregar_qss() -> str:
+    """Lê o QSS do tema e resolve o placeholder __ICONS_DIR__ para o caminho real dos ícones."""
     if not _QSS_PATH.exists():
         logger.warning(f"QSS nao encontrado: {_QSS_PATH}")
         return ""
@@ -70,7 +71,10 @@ def _carregar_qss() -> str:
 
 
 class MainWindow(QMainWindow):
+    """Janela principal: monta a UI, aplica o QSS global e restaura o estado do banco."""
+
     def __init__(self, service: ApontamentoService):
+        """Cria a janela e já a deixa pronta para uso (UI, menu e estado restaurado)."""
         super().__init__()
         self._svc = service
         self._dados_pt: list[dict] = []  # cache [{projeto, tarefa}]
@@ -92,6 +96,7 @@ class MainWindow(QMainWindow):
     # -- Construção da UI ------------------------------------------------------
 
     def _build_ui(self):
+        """Monta o layout raiz: cabeçalho, painel principal e status bar."""
         central = QWidget()
         self.setCentralWidget(central)
         root = QVBoxLayout(central)
@@ -109,6 +114,7 @@ class MainWindow(QMainWindow):
         root.addWidget(self._status_bar)
 
     def _centralizar(self):
+        """Centraliza a janela no monitor primário do Qt."""
         tela = QApplication.primaryScreen().availableGeometry()
         geo = self.frameGeometry()
         geo.moveCenter(tela.center())
@@ -116,6 +122,7 @@ class MainWindow(QMainWindow):
 
     @staticmethod
     def _build_header() -> QWidget:
+        """Monta a faixa de cabeçalho: ícone, título e versão."""
         frame = QFrame()
         frame.setObjectName("appHeader")
         frame.setFixedHeight(52)
@@ -148,6 +155,7 @@ class MainWindow(QMainWindow):
         return frame
 
     def _build_main_panel(self) -> QFrame:
+        """Monta o painel central: projeto, tarefa, nota, horários e botões iniciar/parar."""
         frame = QFrame()
         frame.setObjectName("panelMain")
 
@@ -207,6 +215,7 @@ class MainWindow(QMainWindow):
 
     @staticmethod
     def _field_label(texto: str) -> QLabel:
+        """Cria um QLabel estilizado como legenda de campo."""
         lbl = QLabel(texto)
         lbl.setObjectName("labelFieldCaption")
         return lbl
@@ -214,6 +223,7 @@ class MainWindow(QMainWindow):
     # -- Menu ------------------------------------------------------------------
 
     def _build_menu(self):
+        """Monta a barra de menus: Visualizar, Automação, Configurar, Favoritos e Ajuda."""
         bar = self.menuBar()
 
         # Visualizar
@@ -302,6 +312,7 @@ class MainWindow(QMainWindow):
             self._aplicar_estado_inativo()
 
     def _popular_combos(self):
+        """Popula os combos de projeto/tarefa a partir de self._dados_pt."""
         projetos = sorted({d["projeto"] for d in self._dados_pt})
         self._combo_projeto.set_dados(projetos)
         self._combo_tarefa.set_dados_por_pai(
@@ -312,11 +323,16 @@ class MainWindow(QMainWindow):
         )
 
     def _popular_favoritos(self):
+        """Recalcula e cacheia os favoritos (top 8), usados pelo popup de favoritos."""
         self._favoritos_cache = self._svc.calcular_favoritos(max_itens=8)
 
     # -- Handlers de botão ----------------------------------------------------─
 
     def _on_iniciar(self):
+        """
+        Valida projeto/tarefa/horários e chama service.iniciar_ou_registrar; atualiza
+        UI, favoritos e total do dia conforme o modo retornado (ativo ou retroativo).
+        """
         projeto = self._combo_projeto.valor_atual()
         tarefa = self._combo_tarefa.valor_atual()
 
@@ -380,6 +396,7 @@ class MainWindow(QMainWindow):
         self._popular_favoritos()
 
     def _on_parar(self):
+        """Chama service.parar_ativo com o fim/nota preenchidos (ou now/vazio) e atualiza a UI."""
         fim = self._hora_fim.valor()
         nota = self._nota.toPlainText().strip()
 
@@ -399,6 +416,7 @@ class MainWindow(QMainWindow):
         self._popular_favoritos()
 
     def _abrir_favoritos(self):
+        """Abre o popup de favoritos posicionado abaixo da ação ★ Favoritos na barra de menu."""
         popup = FavoritosPopup(self, self._favoritos_cache)
         popup.favorito_escolhido.connect(self._aplicar_favorito)
         bar = self.menuBar()
@@ -408,16 +426,19 @@ class MainWindow(QMainWindow):
     # -- Estado visual --------------------------------------------------------─
 
     def _aplicar_estado_ativo(self, apontamento: Apontamento):
+        """Atualiza status bar e botões para refletir um apontamento em execução."""
         self._status_bar.set_ativo(apontamento)
         self._btn_parar.setEnabled(True)
         self._btn_iniciar.setText("Trocar Tarefa")
 
     def _aplicar_estado_inativo(self):
+        """Atualiza status bar e botões para refletir nenhum apontamento em execução."""
         self._status_bar.set_inativo()
         self._btn_parar.setEnabled(False)
         self._btn_iniciar.setText("Iniciar / Registrar")
 
     def _aplicar_favorito(self, projeto: str, tarefa: str):
+        """Preenche os combos de projeto/tarefa com o favorito escolhido no popup."""
         self._combo_projeto.set_valor(projeto)
         # Dispara o sinal para o combo de tarefa filtrar
         self._combo_projeto.valor_selecionado.emit(projeto)
@@ -430,6 +451,7 @@ class MainWindow(QMainWindow):
         self._nota.setFixedHeight(nova_h)
 
     def _atualizar_total_hoje(self):
+        """Recalcula o total de horas de hoje (via repo) e atualiza a status bar."""
         from datetime import date
 
         total = self._svc.repo.total_horas_dia(date.today())
@@ -447,18 +469,25 @@ class MainWindow(QMainWindow):
         self._restaurar_estado()
 
     def _abrir_relatorio(self):
+        """Abre RelatorioDialog (janela modal)."""
         from src.ui.dialogs.relatorio_dialog import RelatorioDialog
 
         dlg = RelatorioDialog(self._svc, parent=self)
         dlg.exec()
 
     def _on_configurar_jornada(self):
+        """Abre JornadaConfigDialog (janela modal)."""
         from src.ui.dialogs.jornada_config_dialog import JornadaConfigDialog
 
         dlg = JornadaConfigDialog(self._svc, parent=self)
         dlg.exec()
 
     def _on_automacao_netproject(self):
+        """
+        Fluxo completo da automação NetProject: pede a data, busca os apontamentos
+        do dia, pede confirmação visual, executa a automação (Playwright) e reporta
+        sucesso/erro. Reconfirma antes do envio final via `confirmar_envio`.
+        """
         from src.automacao.exceptions import (
             AutomacaoError,
             CredenciaisInvalidasError,
@@ -532,6 +561,11 @@ class MainWindow(QMainWindow):
         return dlg.exec() == MesclarApontamentosDialog.DialogCode.Accepted
 
     def _on_automacao_sgiweb(self):
+        """
+        Fluxo completo da automação SGIWeb: pede a data, busca os horários do dia,
+        pede confirmação, opcionalmente mescla com o Mikael antes de reconfirmar,
+        executa a automação e reporta sucesso/erro (com fallback se já preenchido).
+        """
         from src.automacao.exceptions import (
             AutomacaoError,
             CredenciaisInvalidasError,
@@ -599,6 +633,7 @@ class MainWindow(QMainWindow):
         self._mostrar_info("✅ Apontamentos enviados com sucesso!")
 
     def _on_mesclar_mikael(self):
+        """Pede a data e abre a tela de mesclagem com o Mikael; recarrega o estado se aplicado."""
         from src.ui.dialogs.utils_dialogs import pedir_data
 
         data_str = pedir_data("Mesclar com Mikael", parent=self)
@@ -610,6 +645,7 @@ class MainWindow(QMainWindow):
             self._mostrar_toast("✅ Apontamentos mesclados com sucesso")
 
     def _on_importar_folha_ponto(self):
+        """Pede os PDFs, lê em background (worker) e abre o preview de importação ao concluir."""
         from PySide6.QtWidgets import QFileDialog
 
         from src.automacao.folha_ponto_import import construir_registros
@@ -652,6 +688,7 @@ class MainWindow(QMainWindow):
         self._worker_folha_ponto.start()
 
     def _on_atualizar_projetos(self):
+        """Pede o recurso, baixa projetos/tarefas do NetProject em background e sincroniza no banco."""
         from src.core.projetos_tarefas import ProjetosTarefasHandler
         from src.ui.dialogs.utils_dialogs import selecionar_recurso_netproject
 
@@ -695,6 +732,7 @@ class MainWindow(QMainWindow):
         self._worker_projetos.start()
 
     def _on_configuracoes_netproject(self):
+        """Abre ProjetosTarefasDialog e recarrega o estado ao fechar (pode ter renomeado pares)."""
         from src.ui.dialogs.projetos_tarefas_dialog import ProjetosTarefasDialog
 
         dlg = ProjetosTarefasDialog(self._svc.repo, parent=self)
@@ -702,6 +740,7 @@ class MainWindow(QMainWindow):
         self._restaurar_estado()
 
     def _on_sobre(self):
+        """Exibe o diálogo padrão 'Sobre' do Qt com versão e stack."""
         QMessageBox.about(
             self,
             "Sobre",
@@ -713,12 +752,15 @@ class MainWindow(QMainWindow):
     # -- Utilitários de diálogo ------------------------------------------------
 
     def _mostrar_erro(self, msg: str):
+        """Exibe `msg` num QMessageBox de erro."""
         mbox.showerror("Erro", msg, parent=self)
 
     def _mostrar_info(self, msg: str):
+        """Exibe `msg` num QMessageBox informativo."""
         mbox.showinfo("Info", msg, parent=self)
 
     def _mostrar_aviso(self, msg: str):
+        """Exibe `msg` num QMessageBox de aviso."""
         mbox.showwarning("Aviso", msg, parent=self)
 
     def _mostrar_toast(self, msg: str):

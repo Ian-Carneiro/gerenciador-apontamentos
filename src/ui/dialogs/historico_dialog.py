@@ -87,6 +87,7 @@ SVG_NOTA = """
 
 
 def _icone_nota() -> QIcon:
+    """Cria o QIcon do ícone de nota (SVG embutido) exibido quando o apontamento tem observação."""
     from PySide6.QtGui import QPixmap
 
     pixmap = QPixmap()
@@ -246,6 +247,7 @@ class _BotoesAcao(QWidget):
     """
 
     def __init__(self, apontamento: Apontamento, dialog: HistoricoDialog, parent=None):
+        """Monta os 5 botões de ação da linha, desabilitando Dividir se o apontamento estiver em execução."""
         super().__init__(parent)
 
         self._apt = apontamento
@@ -333,6 +335,7 @@ class _BotoesAcao(QWidget):
     # ------------------------------------------------------------------
 
     def _on_editar(self):
+        """Abre EditarDialog para este apontamento; recarrega o histórico se salvo."""
         from src.ui.dialogs.editar_dialog import EditarDialog
 
         dlg = EditarDialog(self._apt, self._dialog._svc, parent=self._dialog)
@@ -341,6 +344,7 @@ class _BotoesAcao(QWidget):
             self._dialog.recarregar()
 
     def _on_ajustar(self):
+        """Abre AjustarHorarioDialog para este apontamento; recarrega o histórico se salvo."""
         from src.ui.dialogs.ajustar_horario_dialog import AjustarHorarioDialog
 
         dlg = AjustarHorarioDialog(
@@ -354,6 +358,7 @@ class _BotoesAcao(QWidget):
             self._dialog.recarregar()
 
     def _on_dividir(self):
+        """Abre DividirDialog para este apontamento; recarrega o histórico se dividido."""
         from src.ui.dialogs.dividir_dialog import DividirDialog
 
         try:
@@ -366,6 +371,7 @@ class _BotoesAcao(QWidget):
             QMessageBox.warning(self._dialog, "Erro", str(e))
 
     def _on_adicionar(self):
+        """Abre AdicionarApontamentoDialog para este apontamento; recarrega o histórico se salvo."""
         from src.ui.dialogs.adicionar_dialog import AdicionarApontamentoDialog
 
         dlg = AdicionarApontamentoDialog(self._apt, self._dialog._svc, parent=self._dialog)
@@ -374,6 +380,7 @@ class _BotoesAcao(QWidget):
             self._dialog.recarregar()
 
     def _on_deletar(self):
+        """Pede confirmação e, se aceito, deleta o apontamento e recarrega o histórico."""
         resp = QMessageBox.question(
             self._dialog,
             "Confirmar exclusão",
@@ -404,6 +411,7 @@ class HistoricoDialog(QDialog):
     """
 
     def __init__(self, service: ApontamentoService, parent=None):
+        """Monta a janela (tabela + rodapé) e já carrega os dados."""
         super().__init__(parent)
         self._svc = service
 
@@ -419,6 +427,7 @@ class HistoricoDialog(QDialog):
     # -- Build ----------------------------------------------------------------─
 
     def _build_ui(self):
+        """Monta cabeçalho, a QTableWidget (com larguras/resize por coluna) e o rodapé de total."""
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)

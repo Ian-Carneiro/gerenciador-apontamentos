@@ -1,3 +1,14 @@
+"""
+Configuração central de logging da aplicação.
+
+Loga em console (colorido, exceto no Windows) e em arquivo rotativo
+(logs/app.log, 1MB x 10 backups). Nível configurável via env var LOG_LEVEL.
+
+Uso:
+    from src.utils.logger import get_logger
+    logger = get_logger(__name__)
+"""
+
 import logging
 from logging.handlers import RotatingFileHandler
 import os
@@ -28,6 +39,8 @@ DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 # --- Configuração de cores no console ---
 class ColorFormatter(logging.Formatter):
+    """Formatter que colore a mensagem por nível de log no console (sem efeito no Windows)."""
+
     COLORS: ClassVar[dict[str, str]] = {
         "DEBUG": "\033[94m",
         "INFO": "\033[92m",
@@ -38,6 +51,7 @@ class ColorFormatter(logging.Formatter):
     RESET: ClassVar[str] = "\033[0m"
 
     def format(self, record):
+        """Formata o record normalmente e envolve com códigos ANSI de cor (exceto no Windows)."""
         if sys.platform == "win32":
             return super().format(record)
         color = self.COLORS.get(record.levelname, "")
@@ -74,6 +88,7 @@ logging.basicConfig(
 
 # Função auxiliar pra obter logger por módulo
 def get_logger(name: str | None = None) -> logging.Logger:
+    """Retorna o logger para `name` (tipicamente __name__), já configurado por basicConfig."""
     return logging.getLogger(name)
 
 

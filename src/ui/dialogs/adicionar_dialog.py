@@ -33,6 +33,7 @@ class AdicionarApontamentoDialog(QDialog):
     """Adiciona um apontamento imediatamente antes ou depois de `apontamento`."""
 
     def __init__(self, apontamento: Apontamento, service: ApontamentoService, parent=None):
+        """Monta o diálogo (título, contexto, formulário) e já calcula o preview inicial."""
         super().__init__(parent)
         self._apt = apontamento
         self._svc = service
@@ -45,6 +46,7 @@ class AdicionarApontamentoDialog(QDialog):
         self._atualizar_preview()
 
     def _build_ui(self):
+        """Monta título, contexto de referência, radios antes/depois, combos, nota, horário e preview."""
         layout = QVBoxLayout(self)
         layout.setSpacing(12)
         layout.setContentsMargins(20, 20, 20, 20)
@@ -153,6 +155,7 @@ class AdicionarApontamentoDialog(QDialog):
         layout.addWidget(btns)
 
     def _popular_combos(self):
+        """Carrega projeto/tarefa disponíveis nos combos, com filtragem tarefa-por-projeto."""
         dados_pt = self._svc.listar_projetos_tarefas()
         dicts = [{"projeto": pt.projeto, "tarefa": pt.tarefa} for pt in dados_pt]
         self._combo_projeto.set_dados(sorted({d["projeto"] for d in dicts}))
@@ -165,14 +168,17 @@ class AdicionarApontamentoDialog(QDialog):
 
     @staticmethod
     def _caption(texto: str) -> QLabel:
+        """Cria um QLabel estilizado como legenda de campo."""
         lbl = QLabel(texto)
         lbl.setObjectName("labelFieldCaption")
         return lbl
 
     def _posicao(self) -> str:
+        """Retorna "antes" ou "depois" conforme o radio button marcado."""
         return "antes" if self._rb_antes.isChecked() else "depois"
 
     def _atualizar_preview(self):
+        """Valida o horário digitado contra a posição escolhida e atualiza o preview/botão Adicionar."""
         horario = self._campo_horario.valor(self._apt.inicio.date())
         self._lbl_aviso.setText("")
         self._btn_adicionar.setEnabled(False)
@@ -215,6 +221,7 @@ class AdicionarApontamentoDialog(QDialog):
             self._btn_adicionar.setEnabled(True)
 
     def _adicionar(self):
+        """Valida os campos e chama service.inserir_apontamento; fecha o diálogo em sucesso."""
         horario = self._campo_horario.valor(self._apt.inicio.date())
         projeto = self._combo_projeto.valor_atual()
         tarefa = self._combo_tarefa.valor_atual()

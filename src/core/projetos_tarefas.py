@@ -1,4 +1,4 @@
-"""Gerenciador de Projetos e Tarefas - Com messageboxes"""
+"""Gerenciador de Projetos e Tarefas — download e extração de tarefas do NetProject."""
 
 import os
 from pathlib import Path
@@ -19,6 +19,7 @@ class ProjetosTarefasHandler:
     """Gerenciador de projetos e tarefas"""
 
     def __init__(self):
+        """Garante que o diretório local de XMLs (data/xmls) exista."""
         self.dir_xmls = config.DATA_DIR / "xmls"
         os.makedirs(self.dir_xmls, exist_ok=True)
 

@@ -23,6 +23,7 @@ class LoginPage(BasePage):
     LOGO = "#netproject_logo"
 
     def fazer_login(self) -> bool:
+        """Tenta login via cookies salvos; se a sessão não for válida, faz login com credenciais do .env."""
         self.page.goto(self.URL)
 
         # Cookies (se existirem) já foram injetados via storage_state no BrowserManager
@@ -33,6 +34,7 @@ class LoginPage(BasePage):
         return self._login_credenciais()
 
     def _logo_visivel(self, timeout: float = 5000) -> bool:
+        """Retorna True se o logo do NetProject aparecer na página dentro do timeout."""
         try:
             self.page.wait_for_selector(self.LOGO, timeout=timeout)
             return True
@@ -40,6 +42,7 @@ class LoginPage(BasePage):
             return False
 
     def _login_credenciais(self) -> bool:
+        """Faz login com usuário/senha do .env e salva os cookies da sessão em STATE_FILE."""
         if not config.NETPROJECT_USER or not config.NETPROJECT_PASS:
             raise CredenciaisInvalidasError("❌ Credenciais NetProject não configuradas no .env")
 
@@ -75,18 +78,25 @@ class ApontamentoPage(BasePage):
     OBSERVACAO_TEXTAREA = "textarea[name^='dsc_manual']"
 
     def abrir(self):
+        """Abre a tela de cadastro de apontamentos do NetProject."""
         self.page.goto(self.URL)
         self.sleep(config.TIMEOUT_MEDIO)
 
     def preencher_data(self, data_str: str):
+        """Preenche o campo de data com `data_str` ("%d/%m/%Y")."""
         self.page.fill(self.DATA_INPUT, data_str)
         self.sleep(1)
 
     def adicionar_linha(self):
+        """Clica no botão de adicionar uma nova linha de apontamento."""
         self.page.click(self.BTN_ADICIONAR)
         self.sleep(0.1)
 
     def preencher_apontamento(self, numero: int, apontamento: dict):
+        """
+        Preenche a linha `numero` (0-indexed) da tabela com projeto, tarefa,
+        hora início/fim e observação (se houver) de `apontamento`.
+        """
         linha_atual = self.page.locator(f"{self.TBODY_LINHAS} > tr").nth(numero)
         linha_atual.scroll_into_view_if_needed()
 
@@ -117,7 +127,8 @@ class ApontamentoPage(BasePage):
     def _buscar_opcao(self, campo, resultados, valor: str):
         """
         Digita `valor` incrementalmente (palavra por palavra) até o filtro
-        retornar 3 opções ou menos, e retorna a que bate com o valor exato.
+        retornar 3 opções ou menos, e retorna a primeira cujo texto contém
+        `valor` (comparação por substring, não igualdade exata).
         """
         palavras = valor.split()
         busca = ""
@@ -153,6 +164,7 @@ class ApontamentoPage(BasePage):
 
     @staticmethod
     def _normalizar_espacos(texto: str) -> str:
+        """Colapsa espaços múltiplos em um só e remove espaços nas pontas (para comparar texto)."""
         return re.sub(r"\s+", " ", texto).strip()
 
     def _selecionar_select2(self, elemento_trigger, valor: str, tentativas: int = 3) -> None:
@@ -214,7 +226,7 @@ class ApontamentoPage(BasePage):
         inputs.nth(1).press_sequentially(m)
 
     def _preencher_observacao(self, linha_atual, texto: str):
-        """Preenche o campo de Observações da linha, se houver texto."""
+        """Preenche o campo de Observações da linha, se ele existir no DOM (o chamador já garante texto não vazio)."""
         textarea = linha_atual.locator(self.OBSERVACAO_TEXTAREA)
         if textarea.count() == 0:
             return
@@ -222,6 +234,7 @@ class ApontamentoPage(BasePage):
         textarea.first.fill(texto.strip())
 
     def enviar(self) -> bool:
+        """Submete o formulário, fecha o modal informativo (se aparecer) e retorna False em caso de exceção."""
         try:
             with self.page.expect_navigation():
                 self.page.click(self.BTN_SUBMIT, no_wait_after=True)

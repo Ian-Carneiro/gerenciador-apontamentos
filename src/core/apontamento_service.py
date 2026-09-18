@@ -40,15 +40,22 @@ class ResultadoIniciar:
 
     apontamento: Apontamento
     anterior_parado: Apontamento | None = None  # se houve troca de tarefa
-    modo: str = "iniciado"  # "iniciado" | "retroativo" | "troca"
+    modo: str = "iniciado"  # "iniciado" | "retroativo" | "troca" | "retroativo_com_interrupcao"
 
     @property
     def mensagem(self) -> str:
+        """Mensagem pronta para exibir na UI, formatada de acordo com `modo`."""
         if self.modo == "troca":
             dur = self.anterior_parado.duracao_str if self.anterior_parado else "?"
             return (
                 f"⏹  {self.anterior_parado.tarefa} parado ({dur})\n"
                 f"▶️  {self.apontamento.tarefa} iniciado"
+            )
+        if self.modo == "retroativo_com_interrupcao":
+            dur = self.anterior_parado.duracao_str if self.anterior_parado else "?"
+            return (
+                f"⏸  {self.anterior_parado.tarefa} pausado ({dur})\n"
+                f"▶️  {self.apontamento.tarefa} retomado"
             )
         if self.modo == "retroativo":
             return f"📝 Registrado: {self.apontamento.duracao_str}"
@@ -68,10 +75,12 @@ class ItemFavorito:
 
     @property
     def label(self) -> str:
+        """Texto de exibição: 'Projeto  ›  Tarefa'."""
         return f"{self.projeto}  ›  {self.tarefa}"
 
     @property
     def horas_str(self) -> str:
+        """Total de horas formatado como '2h 30min'."""
         h = int(self.total_horas)
         m = int((self.total_horas - h) * 60)
         return f"{h}h {m:02d}min"
@@ -88,10 +97,12 @@ class EstadoApp:
 
     @property
     def em_execucao(self) -> bool:
+        """True se há um apontamento ativo no snapshot."""
         return self.ativo is not None
 
     @property
     def total_hoje_str(self) -> str:
+        """Total de horas de hoje formatado como '2h 30min'."""
         h = int(self.total_horas_hoje)
         m = int((self.total_horas_hoje - h) * 60)
         return f"{h}h {m:02d}min"
@@ -99,6 +110,8 @@ class EstadoApp:
 
 @dataclass
 class DiaRelatorio:
+    """Horas esperadas vs. trabalhadas em um dia específico do relatório de jornada."""
+
     data: date
     esperado: float
     trabalhado: float
@@ -106,11 +119,14 @@ class DiaRelatorio:
 
     @property
     def saldo(self) -> float:
+        """Diferença trabalhado - esperado (positivo = excedente, negativo = déficit)."""
         return self.trabalhado - self.esperado
 
 
 @dataclass
 class RelatorioJornada:
+    """Relatório completo de jornada: saldo do dia, do mês e do período de banco de horas."""
+
     data_referencia: date
     trabalhado_hoje: float
     esperado_hoje: float
@@ -125,6 +141,7 @@ class RelatorioJornada:
 
     @property
     def falta_hoje(self) -> float:
+        """Horas que ainda faltam para bater a jornada de hoje (0 se já cumprida ou excedida)."""
         return max(0.0, self.esperado_hoje - self.trabalhado_hoje)
 
 
@@ -138,10 +155,12 @@ class ApontamentoService:
     """
 
     def __init__(self, repo: ApontamentoRepository | None = None):
+        """Recebe um repo pronto (para testes/injeção) ou cria um novo ApontamentoRepository."""
         self._repo = repo or ApontamentoRepository()
 
     @property
     def repo(self):
+        """Acesso direto ao repository (uso excepcional; prefira os métodos do service)."""
         return self._repo
 
     # ── Fluxo principal: Iniciar / Registrar ──────────────────────────────────
@@ -433,6 +452,7 @@ class ApontamentoService:
 
     @staticmethod
     def _score_favorito(item: ItemFavorito, agora: datetime) -> float:
+        """Calcula o score de um item (frequência + horas + bônus de recência)."""
         score = item.contagem * 2.0 + (item.total_horas / 10) * 1.5
 
         dias = (agora - item.ultima_vez).days if item.ultima_vez else 999
@@ -450,6 +470,7 @@ class ApontamentoService:
     # ── Histórico ─────────────────────────────────────────────────────────────
 
     def obter_historico(self, limit_dias: int = 30) -> list[BlocoHistorico]:
+        """Blocos de histórico agrupados por dia, para a tela de Histórico (fachada de repo.obter_blocos_historico)."""
         return self._repo.obter_blocos_historico(limit_dias)
 
     def obter_intervalos_livres(self, dia: date | None = None) -> list[tuple[datetime, datetime]]:
@@ -460,6 +481,7 @@ class ApontamentoService:
     # A UI nunca chama o repo diretamente — usa estas fachadas.
 
     def dividir(self, apontamento_id: int, horario_corte: datetime):
+        """Fachada de repo.dividir: divide o apontamento em dois no horário de corte."""
         return self._repo.dividir(apontamento_id, horario_corte)
 
     def inserir_apontamento(
@@ -523,11 +545,13 @@ class ApontamentoService:
         return novo
 
     def atualizar_projeto_tarefa(self, apontamento_id: int, projeto: str, tarefa: str):
+        """Fachada de repo.atualizar_projeto_tarefa."""
         return self._repo.atualizar_projeto_tarefa(apontamento_id, projeto, tarefa)
 
     def ajustar_inicio(
         self, apontamento_id: int, novo_inicio: datetime, ignorar_sobreposicao: bool = False
     ):
+        """Fachada de repo.ajustar_inicio."""
         return self._repo.ajustar_inicio(
             apontamento_id, novo_inicio, ignorar_sobreposicao=ignorar_sobreposicao
         )
@@ -535,11 +559,19 @@ class ApontamentoService:
     def ajustar_fim(
         self, apontamento_id: int, novo_fim: datetime, ignorar_sobreposicao: bool = False
     ):
+        """Fachada de repo.ajustar_fim."""
         return self._repo.ajustar_fim(
             apontamento_id, novo_fim, ignorar_sobreposicao=ignorar_sobreposicao
         )
 
     def slide_adjacentes(self, apt: Apontamento, delta_ini=None, delta_fim=None):
+        """
+        Desloca os apontamentos vizinhos de `apt` para acompanhar um ajuste de
+        início/fim, evitando buraco ou sobreposição na timeline do dia.
+
+        delta_fim desloca o apontamento seguinte (que começa onde `apt` termina);
+        delta_ini desloca o fim do apontamento anterior (que termina onde `apt` começa).
+        """
         if delta_fim:
             proximo = self._repo.buscar_por_inicio(apt.fim)
             if proximo:
@@ -564,49 +596,72 @@ class ApontamentoService:
                 self._repo.ajustar_fim(anterior.id, novo_fim_ant, ignorar_sobreposicao=True)
 
     def atualizar_nota(self, apontamento_id: int, nota: str):
+        """Fachada de repo.atualizar_nota."""
         return self._repo.atualizar_nota(apontamento_id, nota)
 
     def deletar(self, apontamento_id: int) -> bool:
+        """Fachada de repo.deletar."""
         return self._repo.deletar(apontamento_id)
 
     def reabrir(self, apontamento_id: int) -> Apontamento:
+        """Fachada de repo.reabrir."""
         return self._repo.reabrir(apontamento_id)
 
     def obter_ativo(self) -> Apontamento | None:
+        """Fachada de repo.obter_ativo."""
         return self._repo.obter_ativo()
 
     def listar_projetos_tarefas(self) -> list[ProjetoTarefa]:
+        """Lista os projetos/tarefas ativos em cache (fachada de repo.listar_projetos_tarefas)."""
         return self._repo.listar_projetos_tarefas(apenas_ativos=True)
 
     def sincronizar_projetos_tarefas(self, dados: list[dict]) -> int:
+        """Fachada de repo.sincronizar_projetos_tarefas."""
         return self._repo.sincronizar_projetos_tarefas(dados)
 
     def obter_historico_audit(self, apontamento_id: int):
+        """Fachada de repo.obter_historico_audit."""
         return self._repo.obter_historico_audit(apontamento_id)
 
     # ── Jornada / Relatório ───────────────────────────────────────────────────
 
     def obter_config_jornada(self):
+        """Fachada de ConfigJornadaHandler.obter."""
         return ConfigJornadaHandler.obter()
 
     def salvar_config_jornada(self, **kwargs):
+        """Fachada de ConfigJornadaHandler.salvar."""
         return ConfigJornadaHandler.salvar(**kwargs)
 
     def listar_excecoes(self) -> list[DiaExcecao]:
+        """Fachada de repo.listar_excecoes."""
         return self._repo.listar_excecoes()
 
     def criar_excecao(self, **kwargs) -> DiaExcecao:
+        """Fachada de repo.criar_excecao."""
         return self._repo.criar_excecao(**kwargs)
 
     def atualizar_excecao(self, excecao_id: int, **kwargs) -> DiaExcecao:
+        """Fachada de repo.atualizar_excecao."""
         return self._repo.atualizar_excecao(excecao_id, **kwargs)
 
     def deletar_excecao(self, excecao_id: int) -> bool:
+        """Fachada de repo.deletar_excecao."""
         return self._repo.deletar_excecao(excecao_id)
 
     def calcular_relatorio(
         self, data_referencia: date | None = None, sem_segundos: bool = False
     ) -> RelatorioJornada:
+        """
+        Monta o relatório de jornada para `data_referencia` (default: hoje):
+        saldo do dia, do mês corrente e do período de banco de horas vigente
+        (âncora + `banco_horas_meses`), considerando exceções (feriado/dayoff/
+        atestado) e o apontamento em execução, se houver.
+
+        Args:
+            sem_segundos: se True, trunca segundos ao consolidar blocos contínuos
+                antes de somar (repassado a repo.total_horas_por_dia).
+        """
         hoje_ref = data_referencia or date.today()
         cfg = ConfigJornadaHandler.obter()
         dias_trabalho = set(cfg.dias_trabalho)
@@ -691,6 +746,7 @@ class ApontamentoService:
 
     @staticmethod
     def _add_meses(d: date, meses: int) -> date:
+        """Soma `meses` a `d`, ajustando o dia para o último dia válido do mês de destino."""
         mes_total = d.month - 1 + meses
         ano = d.year + mes_total // 12
         mes = mes_total % 12 + 1
@@ -710,6 +766,10 @@ class ApontamentoService:
 
     @classmethod
     def _periodo_banco(cls, ancora: date, meses: int, referencia: date) -> tuple[date, date]:
+        """
+        Retorna (inicio, fim) do período de `meses` meses, a partir de `ancora`,
+        que contém `referencia` — avançando ou recuando períodos sucessivos até encontrá-lo.
+        """
         inicio = ancora
         fim = cls._fim_periodo(inicio, meses)
         # Avança se referencia está além do período atual

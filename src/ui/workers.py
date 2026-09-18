@@ -32,11 +32,13 @@ class AtualizarProjetosWorker(QThread):
     erro = Signal(str)
 
     def __init__(self, handler, recurso: str, parent=None):
+        """Guarda `handler` e `recurso` para usar em run()."""
         super().__init__(parent)
         self._handler = handler
         self._recurso = recurso
 
     def run(self):
+        """Baixa e processa os projetos/tarefas do recurso; emite concluido(dados) ou erro(str)."""
         try:
             dados = self._handler.atualizar_projetos_tarefas(self._recurso, forcar_download=True)
             self.concluido.emit(dados)
@@ -51,10 +53,12 @@ class ImportarFolhaPontoWorker(QThread):
     erro = Signal(str)
 
     def __init__(self, caminhos: list[str], parent=None):
+        """Guarda a lista de caminhos de PDF para usar em run()."""
         super().__init__(parent)
         self._caminhos = caminhos
 
     def run(self):
+        """Parseia cada PDF e mescla os dicts de resultado; emite concluido(dados) ou erro(str)."""
         from src.automacao.folha_ponto_import import parse_espelho_ponto
 
         try:

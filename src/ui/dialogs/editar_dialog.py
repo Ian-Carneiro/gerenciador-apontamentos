@@ -43,6 +43,7 @@ class EditarDialog(QDialog):
         service: ApontamentoService,
         parent=None,
     ):
+        """Monta o diálogo e já preenche os campos com os dados atuais do apontamento."""
         super().__init__(parent)
         self._apt = apontamento
         self._svc = service
@@ -57,6 +58,7 @@ class EditarDialog(QDialog):
     # -- Build ----------------------------------------------------------------─
 
     def _build_ui(self):
+        """Monta cabeçalho, info do intervalo (leitura), combos projeto/tarefa e nota."""
         layout = QVBoxLayout(self)
         layout.setSpacing(12)
         layout.setContentsMargins(20, 20, 20, 20)
@@ -123,6 +125,7 @@ class EditarDialog(QDialog):
 
     @staticmethod
     def _caption(texto: str) -> QLabel:
+        """Cria um QLabel estilizado como legenda de campo."""
         lbl = QLabel(texto)
         lbl.setObjectName("labelFieldCaption")
         return lbl
@@ -130,6 +133,7 @@ class EditarDialog(QDialog):
     # -- Salvar ----------------------------------------------------------------
 
     def _salvar(self):
+        """Valida projeto/tarefa e salva projeto/tarefa/nota alterados; fecha o diálogo em sucesso."""
         projeto = self._combo_projeto.valor_atual()
         tarefa = self._combo_tarefa.valor_atual()
         nota = self._nota.toPlainText().strip()
@@ -151,6 +155,7 @@ class EditarDialog(QDialog):
             self._erro(str(e))
 
     def _erro(self, msg: str):
+        """Exibe `msg` num QMessageBox de aviso."""
         from PySide6.QtWidgets import QMessageBox
 
         QMessageBox.warning(self, "Erro", msg)

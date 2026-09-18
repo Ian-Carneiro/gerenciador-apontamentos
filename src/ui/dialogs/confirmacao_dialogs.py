@@ -137,6 +137,7 @@ def confirmar_horarios_sgiweb(
 
 
 def _label_titulo(texto: str) -> QLabel:
+    """Cria o QLabel de título centralizado do diálogo."""
     lbl = QLabel(texto)
     lbl.setObjectName("labelAppTitle")
     lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -144,6 +145,7 @@ def _label_titulo(texto: str) -> QLabel:
 
 
 def _botoes(on_confirmar, on_cancelar) -> QHBoxLayout:
+    """Monta a linha de botões Confirmar/Cancelar, centralizada."""
     row = QHBoxLayout()
     row.addStretch()
 

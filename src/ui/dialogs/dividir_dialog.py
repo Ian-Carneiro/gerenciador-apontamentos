@@ -63,6 +63,7 @@ class DividirDialog(QDialog):
         service: ApontamentoService,
         parent=None,
     ):
+        """Monta o diálogo; levanta ValueError se o apontamento ainda estiver em execução."""
         super().__init__(parent)
         self._apt = apontamento
         self._svc = service
@@ -79,6 +80,7 @@ class DividirDialog(QDialog):
     # -- Build ----------------------------------------------------------------─
 
     def _build_ui(self):
+        """Monta título, período original, campo de corte e o preview das duas partes."""
         layout = QVBoxLayout(self)
         layout.setSpacing(12)
         layout.setContentsMargins(20, 20, 20, 20)
@@ -163,6 +165,7 @@ class DividirDialog(QDialog):
 
     @staticmethod
     def _caption(texto: str) -> QLabel:
+        """Cria um QLabel estilizado como legenda de campo."""
         lbl = QLabel(texto)
         lbl.setObjectName("labelFieldCaption")
         return lbl
@@ -170,6 +173,7 @@ class DividirDialog(QDialog):
     # -- Preview --------------------------------------------------------------─
 
     def _atualizar_preview(self):
+        """Valida se o corte cai dentro do intervalo e exibe as duas partes resultantes."""
         corte = self._campo_corte.valor(self._apt.inicio.date())
         self._lbl_aviso.setText("")
         self._btn_dividir.setEnabled(False)
@@ -214,6 +218,7 @@ class DividirDialog(QDialog):
     # -- Dividir --------------------------------------------------------------─
 
     def _dividir(self):
+        """Valida o corte e chama service.dividir; fecha o diálogo em sucesso."""
         corte = self._campo_corte.valor(self._apt.inicio.date())
         if corte is None:
             QMessageBox.warning(self, "Erro", "Informe um horário de corte válido.")

@@ -11,6 +11,7 @@ class CredentialsValidator:
 
     @staticmethod
     def validar_netproject() -> tuple[bool, str | None]:
+        """Verifica se NETPROJECT_USER e NETPROJECT_PASS estão configurados no .env."""
         if not config.NETPROJECT_USER:
             msg = "Credencial NETPROJECT_USER não configurada no .env"
             logger.error(f"❌ {msg}")
@@ -24,6 +25,7 @@ class CredentialsValidator:
 
     @staticmethod
     def validar_sgiweb() -> tuple[bool, str | None]:
+        """Verifica se SGIWEB_USER e SGIWEB_PASS estão configurados no .env."""
         if not config.SGIWEB_USER:
             msg = "Credencial SGIWEB_USER não configurada no .env"
             logger.error(f"❌ {msg}")

@@ -38,6 +38,7 @@ class SobreposicaoError(ApontamentoError):
     """Novo intervalo conflita com um já existente."""
 
     def __init__(self, conflito: Apontamento):
+        """Guarda o apontamento conflitante em `self.conflito` e monta a mensagem de erro."""
         self.conflito = conflito
         super().__init__(
             f"Intervalo conflita com apontamento existente: "
@@ -67,10 +68,12 @@ class BlocoHistorico:
 
     @property
     def total_horas(self) -> float:
+        """Soma das horas de todos os apontamentos do bloco (finalizados ou não)."""
         return sum(a.horas or 0.0 for a in self.apontamentos)
 
     @property
     def total_str(self) -> str:
+        """Total do bloco formatado como '2h 30min'."""
         h = int(self.total_horas)
         m = int((self.total_horas - h) * 60)
         return f"{h}h {m:02d}min"
@@ -159,7 +162,8 @@ class ApontamentoRepository:
         Usado para desfazer um "parar" feito por engano.
 
         Raises:
-            ApontamentoError: se não existir ou já estiver em execução.
+            ApontamentoError: se não existir, já estiver em execução, ou se houver
+                um apontamento posterior ao seu fim (reabertura ficaria fora de ordem).
             ApontamentoAtivoError: se já houver outro apontamento ativo.
         """
         with get_session() as s:
@@ -421,6 +425,7 @@ class ApontamentoRepository:
             return apt
 
     def atualizar_nota(self, apontamento_id: int, nota: str) -> Apontamento:
+        """Atualiza a nota de um apontamento, registrando a alteração na auditoria."""
         with get_session() as s:
             apt = self._get_or_raise(s, apontamento_id)
             self._registrar_audit(s, apt, "nota", apt.nota, nota.strip())
@@ -450,6 +455,7 @@ class ApontamentoRepository:
             return s.scalars(stmt).first()
 
     def obter_por_id(self, apontamento_id: int) -> Apontamento | None:
+        """Retorna o apontamento pelo id, ou None se não existir."""
         with get_session() as s:
             return s.get(Apontamento, apontamento_id)
 
@@ -478,11 +484,11 @@ class ApontamentoRepository:
 
     def obter_blocos_historico(self, limit_dias: int = 30) -> list[BlocoHistorico]:
         """
-        Agrupa apontamentos finalizados por dia, ordenados do mais recente
-        ao mais antigo. Usado pela tela de Histórico.
+        Agrupa todos os apontamentos (incluindo o em execução, se houver) por dia,
+        ordenados do mais recente ao mais antigo. Usado pela tela de Histórico.
         """
         with get_session() as s:
-            # Busca apontamentos finalizados agrupados por data
+            # Busca todos os apontamentos, agrupados por data
             stmt = select(Apontamento).order_by(Apontamento.inicio.desc())
             apts = list(s.scalars(stmt).all())
 
@@ -602,6 +608,13 @@ class ApontamentoRepository:
         horas_abonadas: float | None = None,
         observacao: str = "",
     ) -> DiaExcecao:
+        """
+        Cria um dia de exceção (feriado/dayoff/atestado).
+
+        Raises:
+            ValueError: se `tipo` não estiver em DiaExcecao.TIPOS_VALIDOS.
+            ApontamentoError: se já existir exceção cadastrada para a mesma data/recorrência.
+        """
         if tipo not in DiaExcecao.TIPOS_VALIDOS:
             raise ValueError(f"Tipo de exceção inválido: {tipo!r}")
         with get_session() as s:
@@ -621,6 +634,13 @@ class ApontamentoRepository:
             return exc
 
     def atualizar_excecao(self, excecao_id: int, **campos) -> DiaExcecao:
+        """
+        Atualiza campos livres de uma exceção existente (setattr por chave em `campos`).
+
+        Raises:
+            ApontamentoError: se a exceção não existir ou a atualização violar a
+                constraint de unicidade (data, recorrente).
+        """
         with get_session() as s:
             exc = s.get(DiaExcecao, excecao_id)
             if exc is None:
@@ -635,6 +655,7 @@ class ApontamentoRepository:
             return exc
 
     def deletar_excecao(self, excecao_id: int) -> bool:
+        """Remove uma exceção pelo id. Retorna True se removida, False se não encontrada."""
         with get_session() as s:
             exc = s.get(DiaExcecao, excecao_id)
             if exc is None:
@@ -644,11 +665,13 @@ class ApontamentoRepository:
             return True
 
     def listar_excecoes(self) -> list[DiaExcecao]:
+        """Lista todas as exceções cadastradas, ordenadas por data."""
         with get_session() as s:
             stmt = select(DiaExcecao).order_by(DiaExcecao.data)
             return list(s.scalars(stmt).all())
 
     def obter_historico_audit(self, apontamento_id: int) -> list[ApontamentoAudit]:
+        """Retorna o histórico de auditoria de um apontamento, ordenado por data de alteração."""
         with get_session() as s:
             stmt = (
                 select(ApontamentoAudit)
@@ -660,6 +683,7 @@ class ApontamentoRepository:
     # ── Projetos / Tarefas ────────────────────────────────────────────────────
 
     def listar_projetos_tarefas(self, apenas_ativos: bool = True) -> list[ProjetoTarefa]:
+        """Lista projetos/tarefas em cache, ordenados por projeto e tarefa."""
         with get_session() as s:
             stmt = select(ProjetoTarefa)
             if apenas_ativos:
@@ -775,6 +799,7 @@ class ApontamentoRepository:
             return len(apts)
 
     def atualizar_ativo_projeto_tarefa(self, projeto: str, tarefa: str, ativo: bool) -> None:
+        """Marca um par projeto/tarefa como ativo ou inativo na lista de sugestão (combos)."""
         with get_session() as s:
             pt = s.scalars(
                 select(ProjetoTarefa).where(
@@ -803,12 +828,14 @@ class ApontamentoRepository:
     # ── Helpers internos ──────────────────────────────────────────────────────
 
     def _get_or_raise(self, s: Session, apontamento_id: int) -> Apontamento:
+        """Busca o apontamento pelo id ou levanta ApontamentoError se não existir."""
         apt = s.get(Apontamento, apontamento_id)
         if apt is None:
             raise ApontamentoError(f"Apontamento id={apontamento_id} não encontrado.")
         return apt
 
     def _assert_sem_ativo(self, s: Session) -> None:
+        """Levanta ApontamentoAtivoError se já houver um apontamento em execução."""
         ativo = s.scalars(select(Apontamento).where(Apontamento.fim.is_(None))).first()
         if ativo is not None:
             raise ApontamentoAtivoError(
@@ -829,8 +856,8 @@ class ApontamentoRepository:
         Um conflito ocorre quando dois intervalos se sobrepõem:
             inicio_A < fim_B  AND  fim_A > inicio_B
 
-        Para apontamentos em execução (fim=None), verificamos apenas
-        se o novo início está depois do início do ativo.
+        Apontamentos em execução (fim=None) são ignorados nesta checagem;
+        apenas apontamentos já finalizados são considerados.
         """
         stmt = select(Apontamento).where(
             Apontamento.fim.is_not(None)  # só verifica finalizados
@@ -862,6 +889,7 @@ class ApontamentoRepository:
         dia: date,
         incluir_em_execucao: bool = True,
     ) -> list[Apontamento]:
+        """Retorna os apontamentos de `dia` ordenados por início, opcionalmente excluindo o ativo."""
         inicio_dia = datetime.combine(dia, datetime.min.time())
         fim_dia = datetime.combine(dia, datetime.max.time())
 
@@ -878,6 +906,7 @@ class ApontamentoRepository:
         return list(s.scalars(stmt).all())
 
     def _upsert_projeto_tarefa(self, s: Session, projeto: str, tarefa: str) -> None:
+        """Insere o par projeto/tarefa em ProjetoTarefa se ainda não existir (no-op em conflito)."""
         from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
         stmt = sqlite_insert(ProjetoTarefa).values(
@@ -897,6 +926,7 @@ class ApontamentoRepository:
         valor_anterior: str | None,
         valor_novo: str | None,
     ) -> None:
+        """Grava uma linha de auditoria (campo, valor_anterior, valor_novo) para o apontamento."""
         if campo not in ApontamentoAudit.CAMPOS_VALIDOS:
             raise ValueError(f"Campo de auditoria inválido: {campo!r}")
         s.add(

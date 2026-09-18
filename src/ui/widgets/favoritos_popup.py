@@ -17,11 +17,14 @@ from PySide6.QtWidgets import QFrame, QLabel, QPushButton, QVBoxLayout, QWidget
 
 
 class FavoritosPopup(QFrame):
+    """Popup com um botão por favorito (projeto/tarefa); emite favorito_escolhido ao clicar."""
+
     favorito_escolhido = Signal(str, str)  # projeto, tarefa
 
     _LARGURA_MIN = 420
 
     def __init__(self, parent: QWidget, favoritos: list):
+        """Monta um botão por favorito (ou uma mensagem de lista vazia) dentro do frame popup."""
         super().__init__(parent, Qt.WindowType.Popup | Qt.WindowType.FramelessWindowHint)
         self.setObjectName("favPopup")
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
@@ -43,10 +46,12 @@ class FavoritosPopup(QFrame):
             v.addWidget(btn)
 
     def _escolher(self, projeto: str, tarefa: str):
+        """Emite favorito_escolhido com o par selecionado e fecha o popup."""
         self.favorito_escolhido.emit(projeto, tarefa)
         self.close()
 
     def abrir_abaixo_de(self, widget: QWidget):
+        """Posiciona o popup logo abaixo de `widget`, com largura ajustada ao seu tamanho."""
         self.setFixedWidth(max(widget.width() + 60, self._LARGURA_MIN))
         self.move(widget.mapToGlobal(widget.rect().bottomLeft()))
         self.show()

@@ -27,6 +27,7 @@ from src.core.apontamento_service import ApontamentoService, RelatorioJornada
 
 
 def _fmt_horas(h: float, decimal: bool = False) -> str:
+    """Formata horas como '2h 30min' (ou '2.50h' se `decimal`), preservando o sinal."""
     sinal = "-" if h < 0 else ""
     h = abs(h)
     if decimal:
@@ -41,12 +42,16 @@ def _fmt_horas(h: float, decimal: bool = False) -> str:
 
 
 def _fmt_saldo(h: float, decimal: bool = False) -> str:
+    """Como _fmt_horas, mas sempre prefixado com sinal (+ ou -)."""
     fmt = _fmt_horas(h, decimal)
     return f"+{fmt}" if h >= 0 else fmt
 
 
 class _CardRelatorio(QFrame):
+    """Card simples com título + valor, usado para Hoje/Mês/Banco de Horas."""
+
     def __init__(self, titulo: str, parent=None):
+        """Monta o card com o título fixo e o valor inicial "—"."""
         super().__init__(parent)
         self.setObjectName("cardRelatorio")
         v = QVBoxLayout(self)
@@ -59,7 +64,10 @@ class _CardRelatorio(QFrame):
 
 
 class RelatorioDialog(QDialog):
+    """Relatório de horas: cards de Hoje/Mês/Banco de Horas + tabela dia a dia do mês."""
+
     def __init__(self, service: ApontamentoService, parent: QWidget | None = None):
+        """Monta o diálogo e já calcula o relatório para a data de hoje."""
         super().__init__(parent)
         self._svc = service
         self.setWindowTitle("Relatório de Apontamentos")
@@ -71,6 +79,7 @@ class RelatorioDialog(QDialog):
         self._recarregar()
 
     def _build_ui(self):
+        """Monta o seletor de data, os 3 cards de resumo e a tabela dia a dia do mês."""
         layout = QVBoxLayout(self)
 
         linha_data = QHBoxLayout()
@@ -114,6 +123,7 @@ class RelatorioDialog(QDialog):
         layout.addLayout(row)
 
     def _recarregar(self):
+        """Recalcula o relatório para a data/opções atuais e atualiza cards + tabela."""
         qd = self._data_ref.date()
         data_ref = date(qd.year(), qd.month(), qd.day())
         rel: RelatorioJornada = self._svc.calcular_relatorio(

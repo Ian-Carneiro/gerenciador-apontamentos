@@ -53,6 +53,7 @@ class AjustarHorarioDialog(QDialog):
         eh_ultimo: bool = False,
         parent=None,
     ):
+        """Monta o diálogo; `eh_ultimo` habilita a opção de remover o fim (reabrir) só se este for o apontamento mais recente."""
         super().__init__(parent)
         self._apt = apontamento
         self._svc = service
@@ -67,6 +68,7 @@ class AjustarHorarioDialog(QDialog):
     # -- Build ----------------------------------------------------------------─
 
     def _build_ui(self):
+        """Monta os campos de início/fim (com valor atual ao lado) e o preview de duração."""
         layout = QVBoxLayout(self)
         layout.setSpacing(12)
         layout.setContentsMargins(20, 20, 20, 20)
@@ -160,6 +162,7 @@ class AjustarHorarioDialog(QDialog):
 
     @staticmethod
     def _caption(texto: str) -> QLabel:
+        """Cria um QLabel estilizado como legenda de campo."""
         lbl = QLabel(texto)
         lbl.setObjectName("labelFieldCaption")
         return lbl
@@ -167,6 +170,7 @@ class AjustarHorarioDialog(QDialog):
     # -- Preview --------------------------------------------------------------─
 
     def _atualizar_preview(self):
+        """Calcula e exibe a duração resultante (ou o efeito de remover o fim) conforme os campos digitados."""
         ini = self._campo_inicio.valor(self._apt.inicio.date())
         remover_fim = bool(self._chk_remover_fim and self._chk_remover_fim.isChecked())
         fim_data_base = self._apt.fim.date() if self._apt.fim else self._apt.inicio.date()
@@ -209,12 +213,17 @@ class AjustarHorarioDialog(QDialog):
             self._lbl_preview.setText("")
 
     def _on_toggle_remover_fim(self, marcado: bool):
+        """Desabilita o campo de novo fim quando "remover fim" é marcado, e atualiza o preview."""
         self._campo_fim.setEnabled(not marcado)
         self._atualizar_preview()
 
     # -- Salvar ----------------------------------------------------------------
 
     def _salvar(self):
+        """
+        Valida e aplica o ajuste: reabre (se "remover fim" marcado), desloca vizinhos
+        via slide_adjacentes quando início/fim mudam, e então grava início/fim novos.
+        """
         novo_inicio = self._campo_inicio.valor(self._apt.inicio.date())
         fim_data_base = self._apt.fim.date() if self._apt.fim else self._apt.inicio.date()
         novo_fim = self._campo_fim.valor(fim_data_base) if self._campo_fim else None
@@ -271,4 +280,5 @@ class AjustarHorarioDialog(QDialog):
             self._erro(str(e))
 
     def _erro(self, msg: str):
+        """Exibe `msg` num QMessageBox de aviso."""
         QMessageBox.warning(self, "Erro", msg)

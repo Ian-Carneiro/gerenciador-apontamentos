@@ -8,6 +8,8 @@ from config import MIKAEL_GAP_THRESHOLD_MIN
 
 @dataclass
 class Intervalo:
+    """Um intervalo de trabalho normalizado, de origem local (banco) ou Mikael."""
+
     inicio: datetime
     fim: datetime
     origem: str  # "local" | "mikael"
@@ -34,10 +36,12 @@ def _parse_hora(h: str) -> datetime:
 
 
 def _fmt_hora(dt: datetime) -> str:
+    """Formata um datetime (data base 1900-01-01) de volta para "HH:MM:SS"."""
     return dt.strftime("%H:%M:%S")
 
 
 def _nota_mikael(apt: dict) -> str:
+    """Monta a nota do apontamento a partir dos campos chamado/título/justificativa do Mikael, um por linha."""
     linhas = []
     if apt.get("ocorrencia"):
         linhas.append(f"Chamado: {apt['ocorrencia']}")
@@ -126,6 +130,12 @@ def calcular_ajustes(
     intervalos: list[Intervalo],
     apontamentos_db: list,
 ) -> list[AjusteGap]:
+    """
+    Calcula o gap entre cada par de intervalos adjacentes (pulando pares
+    local-local, que não precisam de ajuste), e monta um AjusteGap por par
+    com descrição legível para a UI. `aplicar` já vem marcado como True
+    quando a magnitude do gap é menor que MIKAEL_GAP_THRESHOLD_MIN minutos.
+    """
     ajustes = []
     for i in range(len(intervalos) - 1):
         atual = intervalos[i]
@@ -191,7 +201,8 @@ def aplicar_ajustes(
 ) -> list[Intervalo]:
     """
     Para cada ajuste marcado, fecha o gap:
-    - Move o início do próximo para o fim do anterior.
+    - Se o próximo é "mikael" (fonte da verdade): estende o fim do anterior até ele.
+    - Senão: recua o início do próximo até o fim do anterior.
     """
     for aj in ajustes:
         if not aj.aplicar:

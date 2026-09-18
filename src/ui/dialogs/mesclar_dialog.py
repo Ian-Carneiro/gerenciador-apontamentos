@@ -51,6 +51,7 @@ class MesclarApontamentosDialog(QDialog):
         repo,
         parent: QWidget | None = None,
     ):
+        """Monta o diálogo e já carrega/mescla os apontamentos locais + Mikael."""
         super().__init__(parent)
         self.setWindowTitle("Mesclar / Ajustar Apontamentos")
         self.resize(900, 560)
@@ -71,6 +72,7 @@ class MesclarApontamentosDialog(QDialog):
     # -- UI --------------------------------------------------------------------
 
     def _build_ui(self):
+        """Monta título, tabela de intervalos mesclados e os botões Aplicar/Cancelar."""
         layout = QVBoxLayout(self)
 
         titulo = QLabel(f"📋 Mesclagem de apontamentos — {self._data_str}")
@@ -117,6 +119,7 @@ class MesclarApontamentosDialog(QDialog):
     # -- Lógica ----------------------------------------------------------------
 
     def _carregar(self):
+        """Baixa o Mikael, mescla com os locais, calcula os ajustes de gap e popula a UI."""
         locais = construir_intervalos_locais(self._apontamentos_db)
 
         logger.info("🔄 Baixando apontamentos do Mikael...")
@@ -131,6 +134,7 @@ class MesclarApontamentosDialog(QDialog):
         self._atualizar_preview()
 
     def _preencher_tabela(self, intervalos: list[Intervalo] | None = None):
+        """Repopula as linhas da tabela com `intervalos` (ou self._intervalos, se omitido)."""
         intervalos = self._intervalos if intervalos is None else intervalos
         self._tabela.setRowCount(len(intervalos))
         for row, iv in enumerate(intervalos):
@@ -171,26 +175,8 @@ class MesclarApontamentosDialog(QDialog):
                 lay.addWidget(chk)
             self._tabela.setCellWidget(row, 5, cell)
 
-    def _preencher_gaps(self):
-        while self._gaps_layout.count():
-            item = self._gaps_layout.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
-        self._checkboxes.clear()
-
-        if not self._ajustes:
-            self._lbl_gaps.setText("✅ Sem gaps detectados entre os apontamentos.")
-            return
-
-        self._lbl_gaps.setText("Gaps detectados (marque para fechar automaticamente):")
-        for aj in self._ajustes:
-            chk = QCheckBox(aj.descricao)
-            chk.setChecked(aj.aplicar)  # já calculado corretamente em calcular_ajustes
-            chk.toggled.connect(lambda checked, a=aj: self._on_gap_toggled(a, checked))
-            self._gaps_layout.addWidget(chk)
-            self._checkboxes.append(chk)
-
     def _on_gap_toggled(self, ajuste: AjusteGap, checked: bool):
+        """Atualiza `ajuste.aplicar` e recalcula o preview da tabela."""
         ajuste.aplicar = checked
         self._atualizar_preview()
 
@@ -202,6 +188,7 @@ class MesclarApontamentosDialog(QDialog):
         )
 
     def _on_aplicar(self):
+        """Aplica os ajustes marcados e grava no banco: ajusta locais existentes, registra novos do Mikael."""
 
         intervalos_ajustados = aplicar_ajustes(self._intervalos, self._ajustes)
         data = datetime.strptime(self._data_str, "%d/%m/%Y").date()

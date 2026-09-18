@@ -37,6 +37,7 @@ class ProjetosTarefasDialog(QDialog):
     """Permite corrigir typos de projeto/tarefa direto na base (SQLite)"""
 
     def __init__(self, repo: ApontamentoRepository, parent: QWidget | None = None):
+        """Monta a tabela editável de projetos/tarefas e já carrega os dados."""
         super().__init__(parent)
         self.repo = repo
         self.setWindowTitle("Editar Projetos / Tarefas")
@@ -87,6 +88,7 @@ class ProjetosTarefasDialog(QDialog):
         self._carregar()
 
     def _carregar(self):
+        """Carrega todos os projetos/tarefas (inclusive inativos) do repo e popula a tabela."""
         registros = self.repo.listar_projetos_tarefas(apenas_ativos=False)
         self.tabela.setRowCount(len(registros))
 
@@ -104,6 +106,7 @@ class ProjetosTarefasDialog(QDialog):
             self.tabela.setItem(row, COL_ATIVO, item_ativo)
 
     def _filtrar(self, texto: str):
+        """Oculta as linhas cujo projeto/tarefa não contenham `texto` (sem acento, case-insensitive)."""
         texto = _normalizar(texto.strip())
         for row in range(self.tabela.rowCount()):
             if not texto:
@@ -114,6 +117,7 @@ class ProjetosTarefasDialog(QDialog):
             self.tabela.setRowHidden(row, texto not in projeto and texto not in tarefa)
 
     def _excluir_selecionada(self):
+        """Pede confirmação e remove a linha selecionada da lista de sugestões (não afeta apontamentos já lançados)."""
         row = self.tabela.currentRow()
         if row < 0:
             return
@@ -134,6 +138,10 @@ class ProjetosTarefasDialog(QDialog):
         self.tabela.removeRow(row)
 
     def _salvar(self):
+        """
+        Para cada linha alterada: renomeia projeto/tarefa em massa (via
+        repo.renomear_projeto_tarefa) e atualiza o status ativo/inativo.
+        """
         alteracoes = 0
 
         for row in range(self.tabela.rowCount()):

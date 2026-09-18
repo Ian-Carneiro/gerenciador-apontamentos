@@ -24,6 +24,7 @@ class AutomacaoNetProject:
     """Automação completa do NetProject (sem dependência de UI)"""
 
     def __init__(self, repo):
+        """Recebe o ApontamentoRepository usado para consultar os apontamentos do dia."""
         self.repo = repo
 
     def obter_apontamentos_dia(self, data_str: str) -> list[dict]:

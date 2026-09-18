@@ -33,6 +33,7 @@ class StatusBar(QFrame):
     """
 
     def __init__(self, parent=None):
+        """Monta a UI e inicia no estado inativo, com o timer de tick parado."""
         super().__init__(parent)
         self.setObjectName("panelStatus")
         self.setFixedHeight(56)
@@ -90,6 +91,7 @@ class StatusBar(QFrame):
     # -- Internos --------------------------------------------------------------
 
     def _build_ui(self):
+        """Monta o layout: led, label de contexto, label de tempo/total e espaço elástico."""
         layout = QHBoxLayout(self)
         layout.setContentsMargins(16, 0, 16, 0)
         layout.setSpacing(8)

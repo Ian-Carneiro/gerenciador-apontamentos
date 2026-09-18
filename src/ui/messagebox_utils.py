@@ -4,18 +4,22 @@ from PySide6.QtWidgets import QMessageBox, QWidget
 
 
 def showinfo(title: str, message: str, parent: QWidget | None = None):
+    """Exibe um QMessageBox informativo (ícone de info)."""
     QMessageBox.information(parent, title, message)
 
 
 def showwarning(title: str, message: str, parent: QWidget | None = None):
+    """Exibe um QMessageBox de aviso (ícone de warning)."""
     QMessageBox.warning(parent, title, message)
 
 
 def showerror(title: str, message: str, parent: QWidget | None = None):
+    """Exibe um QMessageBox de erro (ícone crítico)."""
     QMessageBox.critical(parent, title, message)
 
 
 def askyesno(title: str, message: str, parent: QWidget | None = None) -> bool:
+    """Pergunta Sim/Não (padrão No); retorna True se Sim."""
     resposta = QMessageBox.question(
         parent,
         title,
@@ -27,6 +31,7 @@ def askyesno(title: str, message: str, parent: QWidget | None = None) -> bool:
 
 
 def askokcancel(title: str, message: str, parent: QWidget | None = None) -> bool:
+    """Pergunta OK/Cancelar (padrão Cancelar); retorna True se OK."""
     resposta = QMessageBox.question(
         parent,
         title,
@@ -38,6 +43,7 @@ def askokcancel(title: str, message: str, parent: QWidget | None = None) -> bool
 
 
 def askretrycancel(title: str, message: str, parent: QWidget | None = None) -> bool:
+    """Pergunta Repetir/Cancelar (padrão Cancelar); retorna True se Repetir."""
     resposta = QMessageBox.question(
         parent,
         title,
@@ -49,6 +55,7 @@ def askretrycancel(title: str, message: str, parent: QWidget | None = None) -> b
 
 
 def askyesnocancel(title: str, message: str, parent: QWidget | None = None) -> bool | None:
+    """Pergunta Sim/Não/Cancelar (padrão Cancelar); retorna True/False, ou None se Cancelar."""
     resposta = QMessageBox.question(
         parent,
         title,

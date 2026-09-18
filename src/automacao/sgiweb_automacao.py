@@ -26,6 +26,7 @@ class AutomacaoSGIWeb:
     """Automação completa do SGIWeb (sem dependência de UI)"""
 
     def __init__(self, repo):
+        """Recebe o ApontamentoRepository usado para consultar os horários do dia."""
         self.repo = repo
 
     def obter_horarios_dia(self, data_str: str) -> list[str]:

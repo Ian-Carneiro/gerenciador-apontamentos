@@ -75,10 +75,13 @@ def _label_com_hint(texto: str, tooltip: str) -> QWidget:
 
 
 def _ymd(d: date) -> tuple[int, int, int]:
+    """Decompõe uma date em (ano, mês, dia), formato esperado por QDate(*args)."""
     return d.year, d.month, d.day
 
 
 class _BotoesExcecao(QWidget):
+    """Botões de editar/remover de uma linha da tabela de exceções."""
+
     SVG_EDITAR = """
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
          fill="none" stroke="#E8EAF0" stroke-width="1.8"
@@ -99,6 +102,7 @@ class _BotoesExcecao(QWidget):
     </svg>"""
 
     def __init__(self, exc: DiaExcecao, dialog: JornadaConfigDialog, parent=None):
+        """Monta os botões editar/remover, ligados aos handlers de `dialog` para `exc`."""
         super().__init__(parent)
         self._exc = exc
         self._dialog = dialog
@@ -121,6 +125,7 @@ class _BotoesExcecao(QWidget):
 
     @staticmethod
     def _icon(svg: str) -> QIcon:
+        """Cria um QIcon diretamente de uma string SVG."""
         from PySide6.QtGui import QPixmap
 
         pixmap = QPixmap()
@@ -129,6 +134,7 @@ class _BotoesExcecao(QWidget):
 
     @staticmethod
     def _btn(icon: QIcon, tooltip: str, object_name: str = "btnAcao") -> QPushButton:
+        """Cria um botão de ação com ícone."""
         b = QPushButton()
         b.setObjectName(object_name)
         b.setIcon(icon)
@@ -140,11 +146,13 @@ class _BotoesExcecao(QWidget):
 
 
 def _somar_meses(d: date, meses: int) -> date:
+    """Soma `meses` a `d`, mantendo o mesmo dia (assume dia <= 28, ver validação no diálogo)."""
     mes_total = d.month - 1 + meses
     return date(d.year + mes_total // 12, mes_total % 12 + 1, d.day)
 
 
 def _gerar_preview_periodos(inicio: date, meses: int, quantidade: int = 3) -> str:
+    """Gera uma string com os `quantidade` primeiros períodos (início→fim) de `meses` meses cada, a partir de `inicio`."""
     partes = []
     cursor = inicio
     for _ in range(quantidade):
@@ -156,7 +164,10 @@ def _gerar_preview_periodos(inicio: date, meses: int, quantidade: int = 3) -> st
 
 
 class JornadaConfigDialog(QDialog):
+    """Configura jornada diária, período do banco de horas e a lista de dias de exceção."""
+
     def __init__(self, service: ApontamentoService, parent: QWidget | None = None):
+        """Monta a janela e carrega a config e as exceções atuais."""
         super().__init__(parent)
         self._svc = service
         self.setWindowTitle("Configurar Jornada de Trabalho")
@@ -169,6 +180,7 @@ class JornadaConfigDialog(QDialog):
         self._carregar_excecoes()
 
     def _build_ui(self):
+        """Monta o form de jornada/banco de horas, os checkboxes de dias úteis e a tabela de exceções."""
         layout = QVBoxLayout(self)
 
         form = QFormLayout()
@@ -243,6 +255,7 @@ class JornadaConfigDialog(QDialog):
         layout.addLayout(linha_btns)
 
     def _atualizar_preview_periodos(self):
+        """Recalcula e exibe o preview de períodos; exige dia-âncora entre 1 e 28."""
         qd = self._inicio_periodo.date()
         if qd.day() > 28:
             self._lbl_preview_periodos.setText(
@@ -254,6 +267,7 @@ class JornadaConfigDialog(QDialog):
         self._lbl_preview_periodos.setText(f"Períodos gerados: {texto}")
 
     def _carregar_config(self):
+        """Preenche os campos do form com a config de jornada atual."""
         cfg = self._svc.obter_config_jornada()
         self._spin_jornada.setValue(cfg.jornada_horas_dia)
         self._spin_meses.setValue(cfg.banco_horas_meses)
@@ -263,6 +277,7 @@ class JornadaConfigDialog(QDialog):
         self._atualizar_preview_periodos()
 
     def _carregar_excecoes(self):
+        """Recarrega a lista de exceções do service e repopula a tabela (itens + botões de ação)."""
         self._excecoes = self._svc.listar_excecoes()
         self._tabela.setRowCount(0)
         self._tabela.setRowCount(len(self._excecoes))
@@ -285,6 +300,7 @@ class JornadaConfigDialog(QDialog):
             self._tabela.setCellWidget(row, 4, _BotoesExcecao(exc, self))
 
     def _on_adicionar_excecao(self):
+        """Abre _ExcecaoDialog em branco; se confirmado, cria a exceção e recarrega a tabela."""
         dados = _ExcecaoDialog(parent=self).pedir()
         if not dados:
             return
@@ -296,6 +312,7 @@ class JornadaConfigDialog(QDialog):
         self._carregar_excecoes()
 
     def _on_editar_excecao(self, exc: DiaExcecao):
+        """Abre _ExcecaoDialog pré-preenchido com `exc`; se confirmado, atualiza e recarrega a tabela."""
         dados = _ExcecaoDialog(parent=self, excecao=exc).pedir()
         if not dados:
             return
@@ -307,6 +324,7 @@ class JornadaConfigDialog(QDialog):
         self._carregar_excecoes()
 
     def _on_deletar_excecao(self, exc: DiaExcecao):
+        """Pede confirmação e, se aceito, remove `exc` e recarrega a tabela."""
         if not mbox.askyesno(
             "Confirmar", f"Remover a exceção de {exc.data.strftime('%d/%m')}?", parent=self
         ):
@@ -315,6 +333,7 @@ class JornadaConfigDialog(QDialog):
         self._carregar_excecoes()
 
     def _on_salvar(self):
+        """Valida dias de trabalho e dia-âncora, e salva a config de jornada."""
         dias = [i for i, chk in enumerate(self._checks_dias) if chk.isChecked()]
         if not dias:
             mbox.showerror("Erro", "Selecione ao menos um dia de trabalho.", parent=self)
@@ -340,7 +359,10 @@ class JornadaConfigDialog(QDialog):
 
 
 class _ExcecaoDialog(QDialog):
+    """Formulário modal para criar/editar uma exceção; pedir() bloqueia e retorna o dict de dados ou None."""
+
     def __init__(self, parent: QWidget | None = None, excecao: DiaExcecao | None = None):
+        """Monta o formulário; se `excecao` for passada, pré-preenche os campos (modo edição)."""
         super().__init__(parent)
         self.setWindowTitle("Exceção" if excecao is None else "Editar Exceção")
         self.setModal(True)
@@ -397,6 +419,10 @@ class _ExcecaoDialog(QDialog):
         layout.addLayout(row)
 
     def _on_tipo_changed(self):
+        """
+        Só ATESTADO permite dia parcial e não-recorrente: para os demais tipos
+        (Feriado/Dayoff), força e trava tanto "dia inteiro" quanto "recorrente" em True.
+        """
         permite_parcial = self._combo_tipo.currentData() == DiaExcecao.ATESTADO
 
         self._chk_dia_inteiro.setEnabled(permite_parcial)
@@ -408,6 +434,7 @@ class _ExcecaoDialog(QDialog):
             self._chk_recorrente.setChecked(True)
 
     def _preencher(self, exc: DiaExcecao):
+        """Preenche o formulário com os dados de `exc` (modo edição)."""
         idx = self._combo_tipo.findData(exc.tipo)
         if idx >= 0:
             self._combo_tipo.setCurrentIndex(idx)
@@ -419,6 +446,7 @@ class _ExcecaoDialog(QDialog):
         self._obs.setText(exc.observacao)
 
     def _on_confirmar(self):
+        """Valida a data (ano fixo 2000 se recorrente) e monta self._resultado antes de fechar."""
         qd = self._data.date()
         recorrente = self._chk_recorrente.isChecked()
         ano = 2000 if recorrente else qd.year()
@@ -440,5 +468,6 @@ class _ExcecaoDialog(QDialog):
         self.accept()
 
     def pedir(self) -> dict | None:
+        """Executa o diálogo modal e retorna o dict de dados confirmado, ou None se cancelado."""
         self.exec()
         return self._resultado

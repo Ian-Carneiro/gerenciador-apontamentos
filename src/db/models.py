@@ -68,6 +68,7 @@ class Apontamento(Base):
 
     @property
     def em_execucao(self) -> bool:
+        """True se o apontamento ainda não foi finalizado (fim IS NULL)."""
         return self.fim is None
 
     @property
@@ -88,6 +89,7 @@ class Apontamento(Base):
         return f"{s}s"
 
     def __repr__(self) -> str:
+        """Representação compacta: id, intervalo início→fim e projeto (truncado)."""
         fim_str = self.fim.strftime("%H:%M") if self.fim else "…"
         return (
             f"<Apontamento id={self.id} "
@@ -102,7 +104,7 @@ class Apontamento(Base):
 class ApontamentoAudit(Base):
     """
     Registro imutável de cada alteração feita num Apontamento.
-    Permite Undo/Redo e rastreabilidade.
+    Fornece rastreabilidade (quem/quando/o quê mudou); não há Undo/Redo implementado.
     """
 
     __tablename__ = "apontamentos_audit"
@@ -119,6 +121,7 @@ class ApontamentoAudit(Base):
     apontamento: Mapped[Apontamento] = relationship("Apontamento", back_populates="audits")
 
     def __repr__(self) -> str:
+        """Representação compacta: id, apontamento relacionado, campo e transição de valor."""
         return (
             f"<Audit id={self.id} apt={self.apontamento_id} "
             f"campo={self.campo} {self.valor_anterior!r}→{self.valor_novo!r}>"
@@ -148,6 +151,7 @@ class ProjetoTarefa(Base):
     atualizado_em: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     def __repr__(self) -> str:
+        """Representação compacta: projeto e tarefa (truncados)."""
         return f"<ProjetoTarefa {self.projeto[:20]} / {self.tarefa[:20]}>"
 
 
@@ -173,6 +177,7 @@ class DePara(Base):
     para: Mapped[str] = mapped_column(String(500), nullable=False)
 
     def __repr__(self) -> str:
+        """Representação compacta: tipo e transição de/para."""
         return f"<DePara tipo={self.tipo} {self.de!r}→{self.para!r}>"
 
 
@@ -183,8 +188,10 @@ class DiaExcecao(Base):
     """
     Dia que abate (total ou parcialmente) a jornada esperada no relatório.
 
-    recorrente=True  → repete todo ano, só mês/dia importam (ano fixado em 2000)
-    recorrente=False → data específica (dayoff, atestado pontual)
+    recorrente=True  → repete todo ano, só mês/dia importam (ano fixado em 2000).
+        Usado por FERIADO e DAYOFF (ex: aniversário) — a UI força recorrente=True
+        para esses dois tipos.
+    recorrente=False → data específica, pontual. Só ATESTADO permite isso na UI.
     """
 
     __tablename__ = "dias_excecao"
@@ -204,9 +211,11 @@ class DiaExcecao(Base):
 
     @property
     def dia_inteiro(self) -> bool:
+        """True se abate a jornada inteira (sem horas_abonadas parciais definidas)."""
         return self.horas_abonadas is None
 
     def __repr__(self) -> str:
+        """Representação compacta: tipo e data (com indicador 🔁 se recorrente)."""
         ref = f"{self.data.day:02d}/{self.data.month:02d}"
         ref += " 🔁" if self.recorrente else f"/{self.data.year}"
         return f"<DiaExcecao {self.tipo} {ref}>"
@@ -217,4 +226,5 @@ class DiaExcecao(Base):
 
 @event.listens_for(Apontamento, "before_update")
 def _set_atualizado_em(mapper, connection, target: Apontamento):
+    """Listener SQLAlchemy: preenche atualizado_em automaticamente antes de qualquer UPDATE."""
     target.atualizado_em = datetime.now()

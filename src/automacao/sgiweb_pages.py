@@ -21,6 +21,7 @@ class SGIWebLoginPage(BasePage):
     SUBMIT_BTN = "input[name='submit1']"
 
     def fazer_login(self, usuario: str, senha: str):
+        """Preenche usuário/senha e submete o formulário de login do SGIWeb."""
         logger.info("🔐 Fazendo login no SGIWeb...")
         self.page.goto(self.URL)
         self.page.fill(self.USERNAME_INPUT, usuario)
@@ -40,6 +41,7 @@ class SGIWebMarcacaoPage(BasePage):
     INPUT_HORA = "input[name='hora']"
 
     def ir_para_marcacao(self):
+        """Sai do login e navega até a tela de marcação de jornada (Hora Entrada)."""
         logger.info("📋 Navegando para marcação de jornada...")
         self.page.click(self.RADIO_HORA_ENTRADA)
         self.page.click(self.BTN_GO)
@@ -47,6 +49,7 @@ class SGIWebMarcacaoPage(BasePage):
         logger.info("✅ Página de marcação carregada")
 
     def obter_linha_apontamento(self, data_str: str):
+        """Retorna o locator da linha da tabela correspondente a `data_str`, ou None se não encontrada."""
         data_abreviada = datetime.strptime(data_str, "%d/%m/%Y").strftime("%d/%m/%y")
         logger.debug(f"🔍 Buscando linha para data: {data_abreviada}")
         self.sleep(config.TIMEOUT_MEDIO)
@@ -67,6 +70,7 @@ class SGIWebMarcacaoPage(BasePage):
         return linha.first
 
     def preencher_horarios(self, linha_apontamento, horarios: list):
+        """Abre a edição da linha e preenche os inputs de hora, na ordem de `horarios`."""
         logger.info(f"⏰ Preenchendo {len(horarios)} horários...")
 
         linha_apontamento.locator("xpath=.//td[a]/a").click()
@@ -83,6 +87,11 @@ class SGIWebMarcacaoPage(BasePage):
         logger.info("✅ Horários preenchidos")
 
     def enviar_apontamentos(self):
+        """
+        Submete o formulário. Se a página retornar "Validando os dados", desfaz
+        (go_back x2); em qualquer exceção ao checar isso, retorna False. Do
+        contrário — inclusive após o "Validando os dados" — recarrega e retorna True.
+        """
         logger.info("📤 Enviando apontamentos...")
         self.page.click(self.BTN_SUBMIT)
         self.sleep(config.TIMEOUT_MEDIO)
@@ -101,6 +110,7 @@ class SGIWebMarcacaoPage(BasePage):
         return True
 
     def verificar_data_preenchida(self, data_str: str) -> bool:
+        """Retorna True se a linha da data já tiver apontamentos (texto além de data + dia da semana)."""
         linha = self.obter_linha_apontamento(data_str)
         if not linha:
             return False

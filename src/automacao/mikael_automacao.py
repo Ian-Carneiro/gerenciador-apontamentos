@@ -20,10 +20,14 @@ _PROJETO_MIKAEL = "Mikael Apontamentos"
 
 
 class MikaelPage:
+    """Page Object do Mikael: login, navegação até apontamentos e exportação do XLS."""
+
     def __init__(self, page):
+        """Recebe a Page do Playwright já aberta."""
         self.page = page
 
     def fazer_login(self, usuario: str, senha: str):
+        """Preenche usuário/senha na tela inicial e submete o login do Mikael."""
         logger.info("🔐 Fazendo login no Mikael...")
         self.page.goto(_MIKAEL_URL)
         self.page.fill("#loginForm\\:codlogin", usuario)
@@ -32,12 +36,14 @@ class MikaelPage:
         logger.info("✅ Login Mikael realizado")
 
     def navegar_para_apontamentos(self):
+        """Navega pelo menu lateral até a tela de 'Meus Apontamentos de Horas'."""
         logger.info("📋 Navegando para apontamentos...")
         self.page.click("#navigationMenuForm\\:navigationTree-d-3")
         self.page.click("#navigationMenuForm\\:navigationTree-d-3-0")
         self.page.wait_for_timeout(2000)
 
     def exportar_xls(self, destino: Path) -> Path:
+        """Aciona o export para Excel na tela de apontamentos e salva o download em `destino`."""
         logger.info("⬇️ Exportando XLS...")
         with self.page.expect_download(timeout=60_000) as dl_info:
             self.page.click('img.iceGphImg[src="/mikael/gui/images/exportar_excel.png"]')

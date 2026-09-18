@@ -76,6 +76,8 @@ def parse_espelho_ponto(caminho: Path) -> dict[str, list[tuple[str, str]]]:
 
 @dataclass
 class RegistroHistorico:
+    """Um intervalo de trabalho extraído do Espelho de Ponto, pronto para preview/import."""
+
     data: date
     inicio: str  # "HH:MM:SS"
     fim: str
@@ -83,6 +85,7 @@ class RegistroHistorico:
 
     @property
     def horas(self) -> float:
+        """Horas trabalhadas no intervalo (fim - início)."""
         ini = datetime.strptime(self.inicio, "%H:%M:%S")
         fim = datetime.strptime(self.fim, "%H:%M:%S")
         return (fim - ini).total_seconds() / 3600

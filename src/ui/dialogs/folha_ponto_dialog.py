@@ -32,6 +32,7 @@ class ImportarFolhaPontoDialog(QDialog):
     """
 
     def __init__(self, registros: list[RegistroHistorico], repo, parent: QWidget | None = None):
+        """Monta o diálogo de preview com um checkbox por registro extraído."""
         super().__init__(parent)
         self.setWindowTitle("Importar Folha de Ponto")
         self.resize(700, 520)
@@ -45,6 +46,7 @@ class ImportarFolhaPontoDialog(QDialog):
         self._build_ui()
 
     def _build_ui(self):
+        """Monta a tabela de preview (data/entrada/saída/horas/checkbox de importação)."""
         layout = QVBoxLayout(self)
 
         titulo = QLabel("📄 Apontamentos extraídos da folha de ponto")
@@ -102,6 +104,7 @@ class ImportarFolhaPontoDialog(QDialog):
         layout.addLayout(row_botoes)
 
     def _on_importar(self):
+        """Registra via repo.registrar_retroativo cada linha marcada, ignorando sobreposição."""
         count = 0
         for reg, chk in zip(self._registros, self._checkboxes, strict=True):
             if not chk.isChecked():

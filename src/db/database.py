@@ -49,6 +49,7 @@ _SessionFactory: sessionmaker | None = None
 
 
 def _get_engine(db_path: Path | None = None) -> Engine:
+    """Retorna o engine singleton, criando-o (com PRAGMAs aplicados) na primeira chamada."""
     global _engine
     if _engine is None:
         path = db_path or _db_path()
@@ -77,6 +78,7 @@ def _configure_sqlite(engine: Engine) -> None:
 
 
 def _get_session_factory() -> sessionmaker:
+    """Retorna o sessionmaker singleton, criando-o na primeira chamada."""
     global _SessionFactory
     if _SessionFactory is None:
         _SessionFactory = sessionmaker(bind=_get_engine(), expire_on_commit=False)

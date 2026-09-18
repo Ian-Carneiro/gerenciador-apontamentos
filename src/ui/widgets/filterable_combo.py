@@ -1,11 +1,12 @@
 """
-FilterableComboBox — campo editável com dropdown via QFrame(Qt.Popup).
+FilterableComboBox — campo editável com dropdown via QFrame(Qt.WindowType.Tool).
 
 Não usa QComboBox nem QMenu — ambos capturam o teclado no Linux e
-impedem digitar enquanto o dropdown está aberto.
-
-Qt.Popup fecha ao clicar fora mas não rouba foco do QLineEdit,
-permitindo continuar digitando enquanto o dropdown atualiza.
+impedem digitar enquanto o dropdown está aberto. Também não usa
+Qt.Popup: o dropdown é uma janela Tool sem foco (WA_ShowWithoutActivating +
+FocusPolicy.NoFocus), o que evita roubar o foco do QLineEdit. O fechamento
+ao clicar fora é feito manualmente via eventFilter global (Qt.Popup faria
+isso sozinho, mas não foi usado).
 
 Dois níveis de filtragem:
   1. Pai→filho : _visiveis = subconjunto de _todos filtrado pelo pai
@@ -44,15 +45,17 @@ def _norm(texto: str) -> str:
 
 class _DropdownPopup(QFrame):
     """
-    QFrame com flag Qt.Popup:
+    QFrame com flag Qt.WindowType.Tool (não Qt.Popup):
       - Aparece sobre outros widgets sem alterar a janela pai
-      - Fecha automaticamente ao clicar fora
-      - NÃO captura teclado — o QLineEdit continua recebendo digitação
+      - WA_ShowWithoutActivating + FocusPolicy.NoFocus: não rouba foco do QLineEdit
+      - Fecha ao clicar fora via eventFilter manual (Qt.Popup faria isso sozinho,
+        mas capturaria o teclado)
     """
 
     item_selecionado = Signal(str)
 
     def __init__(self, parent: QWidget):
+        """Monta a estrutura do popup (scroll + container de botões), inicialmente vazia."""
         super().__init__(
             parent,
             Qt.WindowType.Tool | Qt.WindowType.FramelessWindowHint,
@@ -125,6 +128,7 @@ class _DropdownPopup(QFrame):
         )  # padding 12+12 + margens 4+4 + folga scrollbar
 
     def posicionar(self, largura: int):
+        """Ajusta a largura (mín. entre `largura`, o conteúdo e 60% da tela), reposiciona e exibe."""
         largura_final = max(largura, self._largura_conteudo, 200)
         tela = QApplication.primaryScreen().availableGeometry().width()
         largura_final = min(largura_final, int(tela * 0.6))
@@ -134,10 +138,12 @@ class _DropdownPopup(QFrame):
         QApplication.instance().installEventFilter(self)
 
     def _reposicionar(self):
+        """Move o popup para logo abaixo do combo pai (canto inferior esquerdo)."""
         pos_global = self._parent_combo.mapToGlobal(self._parent_combo.rect().bottomLeft())
         self.move(pos_global)
 
     def eventFilter(self, obj, event):
+        """Reposiciona ao mover/redimensionar a janela pai; fecha o popup em clique fora dele e do combo."""
         if (
             event.type() in (QEvent.Type.Move, QEvent.Type.Resize)
             and obj is self._parent_combo.window()
@@ -152,6 +158,7 @@ class _DropdownPopup(QFrame):
         return super().eventFilter(obj, event)
 
     def closeEvent(self, event):
+        """Remove o eventFilter global instalado em posicionar() antes de fechar."""
         QApplication.instance().removeEventFilter(self)
         super().closeEvent(event)
 
@@ -170,6 +177,7 @@ class FilterableComboBox(QWidget):
     valor_selecionado = Signal(str)
 
     def __init__(self, parent=None, placeholder: str = ""):
+        """Monta o campo (QLineEdit + botão limpar + seta) e o debounce de digitação."""
         super().__init__(parent)
         self.setObjectName("fcbOuter")
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
@@ -192,6 +200,7 @@ class FilterableComboBox(QWidget):
     # ── Build ─────────────────────────────────────────────────────────────────
 
     def _build_ui(self, placeholder: str):
+        """Monta a linha: QLineEdit + botão de limpar (oculto por padrão) + seta de dropdown."""
         row = QHBoxLayout(self)
         row.setContentsMargins(0, 0, 0, 0)
         row.setSpacing(0)
@@ -222,6 +231,7 @@ class FilterableComboBox(QWidget):
     # ── API pública ───────────────────────────────────────────────────────────
 
     def set_dados(self, itens: list[str]):
+        """Define a lista completa de opções (deduplicada e ordenada), sem filtro de pai."""
         self._todos = sorted(set(itens))
         self._visiveis = list(self._todos)
 
@@ -232,6 +242,11 @@ class FilterableComboBox(QWidget):
         campo_pai: str,
         combo_pai: FilterableComboBox,
     ):
+        """
+        Indexa `dados` por `campo_pai` (para filtrar `campo_proprio` conforme o
+        combo pai) e liga `combo_pai.valor_selecionado` para atualizar `_visiveis`
+        automaticamente a cada mudança do pai.
+        """
         self._combo_pai = combo_pai
         self._dados_por_pai = {}
         todos = set()
@@ -246,9 +261,11 @@ class FilterableComboBox(QWidget):
         self._atualizar_por_pai(combo_pai.valor_atual())
 
     def valor_atual(self) -> str:
+        """Texto atual do campo, sem espaços nas pontas."""
         return self._edit.text().strip()
 
     def set_valor(self, valor: str):
+        """Define o texto do campo sem disparar textEdited; mostra/oculta o botão de limpar."""
         self._edit.blockSignals(True)
         self._edit.setText(valor)
         self._edit.setCursorPosition(0)
@@ -256,17 +273,21 @@ class FilterableComboBox(QWidget):
         self._btn_clear.setVisible(bool(valor.strip()))
 
     def limpar(self):
+        """Esvazia o campo e fecha o dropdown, se aberto."""
         self.set_valor("")
         self._fechar_dropdown()
 
     def atualizar_dados(self, dados_dicts: list[dict], campo: str):
+        """Extrai os valores únicos de `campo` em `dados_dicts` e chama set_dados()."""
         itens = sorted({d[campo] for d in dados_dicts if campo in d})
         self.set_dados(itens)
 
     def setFocus(self):
+        """Repassa o foco para o QLineEdit interno."""
         self._edit.setFocus()
 
     def adicionar_valor(self, valor: str):
+        """Insere `valor` (ordenado) em _todos e _visiveis, se ainda não estiver presente."""
         if valor not in self._todos:
             self._todos.append(valor)
             self._todos.sort()
@@ -275,6 +296,7 @@ class FilterableComboBox(QWidget):
             self._visiveis.sort()
 
     def adicionar_par(self, pai: str, valor: str):
+        """Insere `valor` em _todos e em _dados_por_pai[pai]; também em _visiveis se `pai` for o atual do combo pai."""
         if valor not in self._todos:
             self._todos.append(valor)
             self._todos.sort()
@@ -289,12 +311,14 @@ class FilterableComboBox(QWidget):
     # ── Dropdown ──────────────────────────────────────────────────────────────
 
     def _toggle_dropdown(self):
+        """Fecha o dropdown se estiver visível; senão, abre (mostra)."""
         if self._popup and self._popup.isVisible():
             self._fechar_dropdown()
         else:
             self._mostrar_dropdown()
 
     def _mostrar_dropdown(self):
+        """Filtra _visiveis pelo texto digitado (sem acento) e (re)exibe o popup com o resultado."""
         texto = self._edit.text().strip()
         if texto:
             norm = _norm(texto)
@@ -310,16 +334,19 @@ class FilterableComboBox(QWidget):
         self._popup.posicionar(self.width())
 
     def _fechar_dropdown(self):
+        """Fecha e descarta o popup atual, se houver."""
         if self._popup and self._popup.isVisible():
             self._popup.close()
         self._popup = None
 
     def _ao_selecionar(self, valor: str):
+        """Fecha o dropdown, define o valor escolhido e emite valor_selecionado."""
         self._fechar_dropdown()
         self.set_valor(valor)
         self.valor_selecionado.emit(valor)
 
     def _ao_clicar_limpar(self):
+        """Limpa o campo, emite valor_selecionado("") e reabre o dropdown com foco."""
         self.set_valor("")
         self.valor_selecionado.emit("")
         self.setFocus()
@@ -328,12 +355,13 @@ class FilterableComboBox(QWidget):
     # ── Eventos ───────────────────────────────────────────────────────────────
 
     def _ao_digitar(self, texto: str):
+        """Mostra/oculta o botão de limpar e reinicia o debounce que atualiza o dropdown."""
         self._btn_clear.setVisible(bool(texto.strip()))
         self._debounce.start()
         self.valor_selecionado.emit(texto.strip())
 
     def eventFilter(self, obj, event):
-        """Fecha dropdown ao pressionar Escape; confirma com Enter/Tab."""
+        """Abre o dropdown ao clicar no campo; fecha com Escape; confirma com Enter/Tab."""
         from PySide6.QtCore import QEvent
 
         if obj is self._edit:
@@ -361,10 +389,11 @@ class FilterableComboBox(QWidget):
     # ── Pai→filho ─────────────────────────────────────────────────────────────
 
     def _ao_pai_mudar(self, valor_pai: str):
+        """Slot ligado a combo_pai.valor_selecionado: repassa para _atualizar_por_pai."""
         self._atualizar_por_pai(valor_pai)
 
     def _atualizar_por_pai(self, valor_pai: str):
-        """Atualiza _visiveis sem tocar em _todos."""
+        """Atualiza _visiveis (sem tocar em _todos), habilita/desabilita o campo conforme haja pai, e limpa o valor atual."""
         if valor_pai:
             self._visiveis = sorted(self._dados_por_pai.get(valor_pai, []))
             self.setEnabled(True)
@@ -376,12 +405,14 @@ class FilterableComboBox(QWidget):
     # ── Foco visual ───────────────────────────────────────────────────────────
 
     def focusInEvent(self, event):
+        """Aplica a propriedade dinâmica 'focused=true' pro QSS destacar o campo."""
         self.setProperty("focused", "true")
         self.style().unpolish(self)
         self.style().polish(self)
         super().focusInEvent(event)
 
     def focusOutEvent(self, event):
+        """Remove a propriedade dinâmica 'focused' pro QSS voltar ao estado normal."""
         self.setProperty("focused", "false")
         self.style().unpolish(self)
         self.style().polish(self)
