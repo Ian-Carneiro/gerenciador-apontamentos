@@ -25,6 +25,8 @@ from PySide6.QtWidgets import (
 from src.core.apontamento_service import ApontamentoService
 from src.db.models import Apontamento
 from src.db.repository import ApontamentoError
+from src.ui import messagebox_utils as mbox
+from src.ui.ui_helpers import campo_caption
 from src.ui.widgets.filterable_combo import FilterableComboBox
 from src.utils.logger import get_logger
 
@@ -78,7 +80,7 @@ class EditarDialog(QDialog):
         layout.addSpacing(4)
 
         # Projeto
-        layout.addWidget(self._caption("PROJETO"))
+        layout.addWidget(campo_caption("PROJETO"))
         dados_pt = self._svc._projetos_tarefas_como_dicts()
         projetos = sorted({d["projeto"] for d in dados_pt})
 
@@ -87,7 +89,7 @@ class EditarDialog(QDialog):
         layout.addWidget(self._combo_projeto)
 
         # Tarefa
-        layout.addWidget(self._caption("TAREFA"))
+        layout.addWidget(campo_caption("TAREFA"))
         self._combo_tarefa = FilterableComboBox(placeholder="Selecionar tarefa...")
         self._combo_tarefa.set_dados_por_pai(
             dados=dados_pt,
@@ -98,7 +100,7 @@ class EditarDialog(QDialog):
         layout.addWidget(self._combo_tarefa)
 
         # Nota
-        layout.addWidget(self._caption("NOTA"))
+        layout.addWidget(campo_caption("NOTA"))
         self._nota = QTextEdit()
         self._nota.setObjectName("textEditNota")
         self._nota.setFixedHeight(70)
@@ -123,12 +125,6 @@ class EditarDialog(QDialog):
         self._combo_tarefa.set_valor(self._apt.tarefa)
         self._nota.setPlainText(self._apt.nota)
 
-    @staticmethod
-    def _caption(texto: str) -> QLabel:
-        """Cria um QLabel estilizado como legenda de campo."""
-        lbl = QLabel(texto)
-        lbl.setObjectName("labelFieldCaption")
-        return lbl
 
     # -- Salvar ----------------------------------------------------------------
 
@@ -156,6 +152,4 @@ class EditarDialog(QDialog):
 
     def _erro(self, msg: str):
         """Exibe `msg` num QMessageBox de aviso."""
-        from PySide6.QtWidgets import QMessageBox
-
-        QMessageBox.warning(self, "Erro", msg)
+        mbox.showwarning("Erro", msg, parent=self)

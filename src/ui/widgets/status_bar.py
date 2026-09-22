@@ -76,7 +76,7 @@ class StatusBar(QFrame):
         self._inicio = None
 
         self._timer.stop()
-        self._led.setText("o")
+        self._led.setText("●")
         self._set_led_status("idle")
         self._label_contexto.setText("Nenhum apontamento em execucao")
         self._label_contexto.setStyleSheet(f"color: {TEXT_MUTED}; font-size: 13px;")

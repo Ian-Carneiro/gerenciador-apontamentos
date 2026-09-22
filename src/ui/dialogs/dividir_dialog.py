@@ -27,14 +27,15 @@ from PySide6.QtWidgets import (
     QDialogButtonBox,
     QFrame,
     QLabel,
-    QMessageBox,
     QVBoxLayout,
 )
 
 from src.core.apontamento_service import ApontamentoService
 from src.db.models import Apontamento
 from src.db.repository import ApontamentoError, HorarioInvalidoError
+from src.ui import messagebox_utils as mbox
 from src.ui.style.tokens import ACCENT_TEXT, BORDER, DANGER, TEXT_PRIMARY, TEXT_SECONDARY
+from src.ui.ui_helpers import campo_caption, truncar_texto
 from src.ui.widgets.hora_field import HoraField
 from src.utils.logger import get_logger
 
@@ -91,8 +92,8 @@ class DividirDialog(QDialog):
         layout.addWidget(lbl)
 
         # Contexto
-        proj = self._apt.projeto[:40] + "..." if len(self._apt.projeto) > 40 else self._apt.projeto
-        tar = self._apt.tarefa[:40] + "..." if len(self._apt.tarefa) > 40 else self._apt.tarefa
+        proj = truncar_texto(self._apt.projeto, 40)
+        tar = truncar_texto(self._apt.tarefa, 40)
         lbl_ctx = QLabel(f"{proj}  >  {tar}")
         lbl_ctx.setStyleSheet(f"color: {TEXT_SECONDARY}; font-size: 13px;")
         layout.addWidget(lbl_ctx)
@@ -110,7 +111,7 @@ class DividirDialog(QDialog):
         layout.addSpacing(4)
 
         # Campo de corte
-        layout.addWidget(self._caption("HORÁRIO DE CORTE"))
+        layout.addWidget(campo_caption("HORÁRIO DE CORTE"))
         self._campo_corte = HoraField("")
         self._campo_corte.edit.setPlaceholderText("HH:MM:SS")
         self._campo_corte.edit.textChanged.connect(self._atualizar_preview)
@@ -163,13 +164,6 @@ class DividirDialog(QDialog):
         layout.addWidget(btns)
         self.setFocus()
 
-    @staticmethod
-    def _caption(texto: str) -> QLabel:
-        """Cria um QLabel estilizado como legenda de campo."""
-        lbl = QLabel(texto)
-        lbl.setObjectName("labelFieldCaption")
-        return lbl
-
     # -- Preview --------------------------------------------------------------─
 
     def _atualizar_preview(self):
@@ -221,7 +215,7 @@ class DividirDialog(QDialog):
         """Valida o corte e chama service.dividir; fecha o diálogo em sucesso."""
         corte = self._campo_corte.valor(self._apt.inicio.date())
         if corte is None:
-            QMessageBox.warning(self, "Erro", "Informe um horário de corte válido.")
+            mbox.showwarning("Erro", "Informe um horário de corte válido.", parent=self)
             return
 
         try:
@@ -233,6 +227,6 @@ class DividirDialog(QDialog):
             )
             self.accept()
         except HorarioInvalidoError as e:
-            QMessageBox.warning(self, "Horário inválido", str(e))
+            mbox.showwarning("Horário inválido", str(e), parent=self)
         except ApontamentoError as e:
-            QMessageBox.warning(self, "Erro", str(e))
+            mbox.showwarning("Erro", str(e), parent=self)

@@ -45,6 +45,7 @@ from src.core.apontamento_service import ApontamentoService, EstadoApp
 from src.db.models import Apontamento
 from src.db.repository import ApontamentoAtivoError, HorarioInvalidoError, SobreposicaoError
 from src.ui import messagebox_utils as mbox
+from src.ui.ui_helpers import campo_caption
 from src.ui.widgets.favoritos_popup import FavoritosPopup
 from src.ui.widgets.filterable_combo import FilterableComboBox
 from src.ui.widgets.hora_field import HoraField
@@ -164,17 +165,17 @@ class MainWindow(QMainWindow):
         layout.setSpacing(14)
 
         # -- Projeto ----------------------------------------------------------
-        layout.addWidget(self._field_label("PROJETO"))
+        layout.addWidget(campo_caption("PROJETO"))
         self._combo_projeto = FilterableComboBox(placeholder="Selecionar projeto...")
         layout.addWidget(self._combo_projeto)
 
         # -- Tarefa ----------------------------------------------------------─
-        layout.addWidget(self._field_label("TAREFA"))
+        layout.addWidget(campo_caption("TAREFA"))
         self._combo_tarefa = FilterableComboBox(placeholder="Selecionar tarefa...")
         layout.addWidget(self._combo_tarefa)
 
         # -- Nota ------------------------------------------------------------─
-        layout.addWidget(self._field_label("NOTA  (opcional)"))
+        layout.addWidget(campo_caption("NOTA  (opcional)"))
         self._nota = QTextEdit()
         self._nota.setObjectName("textEditNota")
         self._nota.setPlaceholderText("Observacoes sobre este apontamento...")
@@ -212,13 +213,6 @@ class MainWindow(QMainWindow):
 
         layout.addLayout(linha_btns)
         return frame
-
-    @staticmethod
-    def _field_label(texto: str) -> QLabel:
-        """Cria um QLabel estilizado como legenda de campo."""
-        lbl = QLabel(texto)
-        lbl.setObjectName("labelFieldCaption")
-        return lbl
 
     # -- Menu ------------------------------------------------------------------
 

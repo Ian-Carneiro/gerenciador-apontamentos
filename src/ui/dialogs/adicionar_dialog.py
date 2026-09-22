@@ -13,7 +13,6 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
-    QMessageBox,
     QRadioButton,
     QVBoxLayout,
 )
@@ -21,7 +20,9 @@ from PySide6.QtWidgets import (
 from src.core.apontamento_service import ApontamentoService
 from src.db.models import Apontamento
 from src.db.repository import ApontamentoError, HorarioInvalidoError, SobreposicaoError
+from src.ui import messagebox_utils as mbox
 from src.ui.style.tokens import ACCENT_TEXT, BORDER, DANGER, TEXT_PRIMARY, TEXT_SECONDARY
+from src.ui.ui_helpers import campo_caption, truncar_texto
 from src.ui.widgets.filterable_combo import FilterableComboBox
 from src.ui.widgets.hora_field import HoraField
 from src.utils.logger import get_logger
@@ -55,8 +56,8 @@ class AdicionarApontamentoDialog(QDialog):
         lbl.setStyleSheet(f"font-size: 14px; font-weight: 700; color: {TEXT_PRIMARY};")
         layout.addWidget(lbl)
 
-        proj = self._apt.projeto[:40] + "..." if len(self._apt.projeto) > 40 else self._apt.projeto
-        tar = self._apt.tarefa[:40] + "..." if len(self._apt.tarefa) > 40 else self._apt.tarefa
+        proj = truncar_texto(self._apt.projeto, 40)
+        tar = truncar_texto(self._apt.tarefa, 40)
         lbl_ctx = QLabel(f"Referência: {proj}  >  {tar}")
         lbl_ctx.setStyleSheet(f"color: {TEXT_SECONDARY}; font-size: 13px;")
         layout.addWidget(lbl_ctx)
@@ -89,24 +90,24 @@ class AdicionarApontamentoDialog(QDialog):
 
         layout.addSpacing(4)
 
-        layout.addWidget(self._caption("PROJETO"))
+        layout.addWidget(campo_caption("PROJETO"))
         self._combo_projeto = FilterableComboBox(placeholder="Selecionar projeto...")
         self._combo_projeto.valor_selecionado.connect(self._atualizar_preview)
         layout.addWidget(self._combo_projeto)
 
-        layout.addWidget(self._caption("TAREFA"))
+        layout.addWidget(campo_caption("TAREFA"))
         self._combo_tarefa = FilterableComboBox(placeholder="Selecionar tarefa...")
         self._combo_tarefa.valor_selecionado.connect(self._atualizar_preview)
         layout.addWidget(self._combo_tarefa)
 
         self._popular_combos()
 
-        layout.addWidget(self._caption("NOTA (opcional)"))
+        layout.addWidget(campo_caption("NOTA (opcional)"))
         self._campo_nota = QLineEdit()
         layout.addWidget(self._campo_nota)
 
         layout.addSpacing(4)
-        layout.addWidget(self._caption("HORÁRIO"))
+        layout.addWidget(campo_caption("HORÁRIO"))
         self._campo_horario = HoraField("")
         self._campo_horario.edit.setPlaceholderText("HH:MM:SS")
         self._campo_horario.edit.textChanged.connect(self._atualizar_preview)
@@ -166,13 +167,6 @@ class AdicionarApontamentoDialog(QDialog):
             combo_pai=self._combo_projeto,
         )
 
-    @staticmethod
-    def _caption(texto: str) -> QLabel:
-        """Cria um QLabel estilizado como legenda de campo."""
-        lbl = QLabel(texto)
-        lbl.setObjectName("labelFieldCaption")
-        return lbl
-
     def _posicao(self) -> str:
         """Retorna "antes" ou "depois" conforme o radio button marcado."""
         return "antes" if self._rb_antes.isChecked() else "depois"
@@ -227,10 +221,10 @@ class AdicionarApontamentoDialog(QDialog):
         tarefa = self._combo_tarefa.valor_atual()
 
         if horario is None:
-            QMessageBox.warning(self, "Erro", "Informe um horário válido.")
+            mbox.showwarning("Erro", "Informe um horário válido.", parent=self)
             return
         if not projeto or not tarefa:
-            QMessageBox.warning(self, "Erro", "Informe Projeto e Tarefa.")
+            mbox.showwarning("Erro", "Informe Projeto e Tarefa.", parent=self)
             return
 
         try:
@@ -245,4 +239,4 @@ class AdicionarApontamentoDialog(QDialog):
             logger.info(f"Adicionado id={novo.id} ({self._posicao()} de id={self._apt.id})")
             self.accept()
         except (HorarioInvalidoError, SobreposicaoError, ApontamentoError, ValueError) as e:
-            QMessageBox.warning(self, "Erro", str(e))
+            mbox.showwarning("Erro", str(e), parent=self)

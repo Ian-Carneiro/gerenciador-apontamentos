@@ -13,15 +13,15 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QCheckBox,
     QDialog,
-    QHBoxLayout,
     QHeaderView,
     QLabel,
-    QPushButton,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
     QWidget,
 )
+
+from src.ui.ui_helpers import linha_botoes_confirmar_cancelar
 
 
 def confirmar_apontamentos_netproject(
@@ -72,7 +72,7 @@ def confirmar_apontamentos_netproject(
         confirmado["valor"] = True
         dlg.accept()
 
-    layout.addLayout(_botoes(confirmar, dlg.reject))
+    layout.addLayout(linha_botoes_confirmar_cancelar(confirmar, dlg.reject))
     dlg.exec()
     return confirmado["valor"], chk_observacao.isChecked() if chk_observacao else False
 
@@ -131,7 +131,7 @@ def confirmar_horarios_sgiweb(
         confirmado["valor"] = True
         dlg.accept()
 
-    layout.addLayout(_botoes(confirmar, dlg.reject))
+    layout.addLayout(linha_botoes_confirmar_cancelar(confirmar, dlg.reject))
     dlg.exec()
     return confirmado["valor"], chk_mikael.isChecked() if chk_mikael else False
 
@@ -142,22 +142,3 @@ def _label_titulo(texto: str) -> QLabel:
     lbl.setObjectName("labelAppTitle")
     lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
     return lbl
-
-
-def _botoes(on_confirmar, on_cancelar) -> QHBoxLayout:
-    """Monta a linha de botões Confirmar/Cancelar, centralizada."""
-    row = QHBoxLayout()
-    row.addStretch()
-
-    btn_ok = QPushButton("✓ Confirmar")
-    btn_ok.setObjectName("btnConfirmar")
-    btn_ok.clicked.connect(on_confirmar)
-
-    btn_cancel = QPushButton("✗ Cancelar")
-    btn_cancel.setObjectName("btnSecundario")
-    btn_cancel.clicked.connect(on_cancelar)
-
-    row.addWidget(btn_ok)
-    row.addWidget(btn_cancel)
-    row.addStretch()
-    return row

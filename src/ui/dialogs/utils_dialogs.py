@@ -10,13 +10,12 @@ from PySide6.QtCore import QDate, Qt
 from PySide6.QtWidgets import (
     QDateEdit,
     QDialog,
-    QHBoxLayout,
     QLabel,
-    QPushButton,
     QVBoxLayout,
     QWidget,
 )
 
+from src.ui.ui_helpers import linha_botoes_confirmar_cancelar
 from src.ui.widgets.filterable_combo import FilterableComboBox
 
 
@@ -41,7 +40,7 @@ def pedir_data(titulo: str = "Selecionar Data", parent: QWidget | None = None) -
         resultado["data"] = campo_data.date().toString("dd/MM/yyyy")
         dlg.accept()
 
-    layout.addLayout(_botoes(_confirmar, dlg.reject))
+    layout.addLayout(linha_botoes_confirmar_cancelar(_confirmar, dlg.reject))
     dlg.exec()
     return resultado["data"]
 
@@ -76,28 +75,6 @@ def selecionar_recurso_netproject(recursos: list[str], parent: QWidget | None = 
         resultado["valor"] = valor
         dlg.accept()
 
-    layout.addLayout(_botoes(_confirmar, dlg.reject))
+    layout.addLayout(linha_botoes_confirmar_cancelar(_confirmar, dlg.reject))
     dlg.exec()
     return resultado["valor"]
-
-
-# ── Helpers internos ──────────────────────────────────────────────────────────
-
-
-def _botoes(on_confirmar, on_cancelar) -> QHBoxLayout:
-    """Monta a linha de botões Confirmar/Cancelar, centralizada."""
-    row = QHBoxLayout()
-    row.addStretch()
-
-    btn_ok = QPushButton("✓ Confirmar")
-    btn_ok.setObjectName("btnConfirmar")
-    btn_ok.clicked.connect(on_confirmar)
-
-    btn_cancel = QPushButton("✗ Cancelar")
-    btn_cancel.setObjectName("btnSecundario")
-    btn_cancel.clicked.connect(on_cancelar)
-
-    row.addWidget(btn_ok)
-    row.addWidget(btn_cancel)
-    row.addStretch()
-    return row

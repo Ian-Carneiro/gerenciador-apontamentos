@@ -26,14 +26,15 @@ from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QLabel,
-    QMessageBox,
     QVBoxLayout,
 )
 
 from src.core.apontamento_service import ApontamentoService
 from src.db.models import Apontamento
 from src.db.repository import ApontamentoError, HorarioInvalidoError, SobreposicaoError
+from src.ui import messagebox_utils as mbox
 from src.ui.style.tokens import ACCENT_TEXT, BORDER, DANGER, TEXT_PRIMARY, TEXT_SECONDARY
+from src.ui.ui_helpers import campo_caption, truncar_texto
 from src.ui.widgets.hora_field import HoraField
 from src.utils.logger import get_logger
 
@@ -79,8 +80,8 @@ class AjustarHorarioDialog(QDialog):
         layout.addWidget(lbl)
 
         # Contexto
-        proj = self._apt.projeto[:40] + "..." if len(self._apt.projeto) > 40 else self._apt.projeto
-        tar = self._apt.tarefa[:40] + "..." if len(self._apt.tarefa) > 40 else self._apt.tarefa
+        proj = truncar_texto(self._apt.projeto, 40)
+        tar = truncar_texto(self._apt.tarefa, 40)
         lbl_ctx = QLabel(f"{proj}  >  {tar}")
         lbl_ctx.setStyleSheet(f"color: {TEXT_SECONDARY}; font-size: 13px;")
         layout.addWidget(lbl_ctx)
@@ -88,7 +89,7 @@ class AjustarHorarioDialog(QDialog):
         layout.addSpacing(4)
 
         # -- Início ----------------------------------------------------------─
-        layout.addWidget(self._caption("INÍCIO"))
+        layout.addWidget(campo_caption("INÍCIO"))
         row_ini = QHBoxLayout()
         lbl_ini_atual = QLabel(self._apt.inicio.strftime("%H:%M:%S"))
         lbl_ini_atual.setStyleSheet(
@@ -108,7 +109,7 @@ class AjustarHorarioDialog(QDialog):
         # -- Fim --------------------------------------------------------------─
         if self._apt.fim is not None:
             layout.addSpacing(8)
-            layout.addWidget(self._caption("FIM"))
+            layout.addWidget(campo_caption("FIM"))
             row_fim = QHBoxLayout()
             lbl_fim_atual = QLabel(self._apt.fim.strftime("%H:%M:%S"))
             lbl_fim_atual.setStyleSheet(
@@ -159,13 +160,6 @@ class AjustarHorarioDialog(QDialog):
         btns.accepted.connect(self._salvar)
         btns.rejected.connect(self.reject)
         layout.addWidget(btns)
-
-    @staticmethod
-    def _caption(texto: str) -> QLabel:
-        """Cria um QLabel estilizado como legenda de campo."""
-        lbl = QLabel(texto)
-        lbl.setObjectName("labelFieldCaption")
-        return lbl
 
     # -- Preview --------------------------------------------------------------─
 
@@ -281,4 +275,4 @@ class AjustarHorarioDialog(QDialog):
 
     def _erro(self, msg: str):
         """Exibe `msg` num QMessageBox de aviso."""
-        QMessageBox.warning(self, "Erro", msg)
+        mbox.showwarning("Erro", msg, parent=self)

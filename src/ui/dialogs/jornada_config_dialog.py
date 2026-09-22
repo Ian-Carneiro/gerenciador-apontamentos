@@ -7,8 +7,7 @@ from __future__ import annotations
 
 from datetime import date, timedelta
 
-from PySide6.QtCore import QDate, QSize, Qt
-from PySide6.QtGui import QIcon
+from PySide6.QtCore import QDate, Qt
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -31,6 +30,7 @@ from PySide6.QtWidgets import (
 from src.core.apontamento_service import ApontamentoService
 from src.db.models import DiaExcecao
 from src.ui import messagebox_utils as mbox
+from src.ui.ui_helpers import botao_com_icone, icone_de_svg
 
 _DIAS_SEMANA = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]
 _TIPOS_LABEL = {
@@ -111,9 +111,9 @@ class _BotoesExcecao(QWidget):
         layout.setContentsMargins(6, 2, 6, 2)
         layout.setSpacing(4)
 
-        self._btn_editar = self._btn(self._icon(self.SVG_EDITAR), "Editar exceção")
-        self._btn_deletar = self._btn(
-            self._icon(self.SVG_LIXEIRA), "Remover exceção", object_name="btnDel"
+        self._btn_editar = botao_com_icone(icone_de_svg(self.SVG_EDITAR), "Editar exceção")
+        self._btn_deletar = botao_com_icone(
+            icone_de_svg(self.SVG_LIXEIRA), "Remover exceção", object_name="btnDel"
         )
 
         layout.addWidget(self._btn_editar)
@@ -122,27 +122,6 @@ class _BotoesExcecao(QWidget):
 
         self._btn_editar.clicked.connect(lambda: dialog._on_editar_excecao(exc))
         self._btn_deletar.clicked.connect(lambda: dialog._on_deletar_excecao(exc))
-
-    @staticmethod
-    def _icon(svg: str) -> QIcon:
-        """Cria um QIcon diretamente de uma string SVG."""
-        from PySide6.QtGui import QPixmap
-
-        pixmap = QPixmap()
-        pixmap.loadFromData(svg.encode("utf-8"), "SVG")
-        return QIcon(pixmap)
-
-    @staticmethod
-    def _btn(icon: QIcon, tooltip: str, object_name: str = "btnAcao") -> QPushButton:
-        """Cria um botão de ação com ícone."""
-        b = QPushButton()
-        b.setObjectName(object_name)
-        b.setIcon(icon)
-        b.setIconSize(QSize(16, 16))
-        b.setToolTip(tooltip)
-        b.setFixedSize(QSize(32, 28))
-        b.setCursor(Qt.CursorShape.PointingHandCursor)
-        return b
 
 
 def _somar_meses(d: date, meses: int) -> date:

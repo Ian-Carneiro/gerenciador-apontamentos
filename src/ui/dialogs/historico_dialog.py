@@ -23,7 +23,7 @@ Implementação:
 
 from __future__ import annotations
 
-from PySide6.QtCore import QSize, Qt
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QBrush, QColor, QFont, QIcon
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -43,6 +43,7 @@ from PySide6.QtWidgets import (
 from src.core.apontamento_service import ApontamentoService
 from src.db.models import Apontamento
 from src.db.repository import BlocoHistorico
+from src.ui.ui_helpers import botao_com_icone, icone_de_svg
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -257,18 +258,18 @@ class _BotoesAcao(QWidget):
         layout.setContentsMargins(6, 2, 6, 2)
         layout.setSpacing(4)
 
-        self._btn_editar = self._btn(self._icon(self.SVG_EDITAR), "Editar projeto/tarefa/nota")
+        self._btn_editar = botao_com_icone(icone_de_svg(self.SVG_EDITAR), "Editar projeto/tarefa/nota")
 
-        self._btn_ajustar = self._btn(self._icon(self.SVG_RELOGIO), "Ajustar horário")
+        self._btn_ajustar = botao_com_icone(icone_de_svg(self.SVG_RELOGIO), "Ajustar horário")
 
-        self._btn_dividir = self._btn(self._icon(self.SVG_DIVIDIR), "Dividir apontamento")
+        self._btn_dividir = botao_com_icone(icone_de_svg(self.SVG_DIVIDIR), "Dividir apontamento")
 
-        self._btn_adicionar = self._btn(
-            self._icon(self.SVG_ADICIONAR), "Adicionar apontamento antes/depois"
+        self._btn_adicionar = botao_com_icone(
+            icone_de_svg(self.SVG_ADICIONAR), "Adicionar apontamento antes/depois"
         )
 
-        self._btn_deletar = self._btn(
-            self._icon(self.SVG_LIXEIRA), "Deletar apontamento", object_name="btnDel"
+        self._btn_deletar = botao_com_icone(
+            icone_de_svg(self.SVG_LIXEIRA), "Deletar apontamento", object_name="btnDel"
         )
 
         layout.addWidget(self._btn_editar)
@@ -298,37 +299,6 @@ class _BotoesAcao(QWidget):
         self._btn_dividir.clicked.connect(self._on_dividir)
         self._btn_adicionar.clicked.connect(self._on_adicionar)
         self._btn_deletar.clicked.connect(self._on_deletar)
-
-    # ------------------------------------------------------------------
-    # Helpers
-    # ------------------------------------------------------------------
-
-    @staticmethod
-    def _icon(svg: str) -> QIcon:
-        """
-        Cria um QIcon diretamente de uma string SVG.
-        Não é necessário criar arquivos externos.
-        """
-        from PySide6.QtGui import QPixmap
-
-        pixmap = QPixmap()
-
-        if not pixmap.loadFromData(svg.encode("utf-8"), "SVG"):
-            raise ValueError("Não foi possível carregar o SVG do ícone.")
-
-        return QIcon(pixmap)
-
-    @staticmethod
-    def _btn(icon: QIcon, tooltip: str, object_name: str = "btnAcao") -> QPushButton:
-        """Cria um botão de ação com ícone."""
-        b = QPushButton()
-        b.setObjectName(object_name)
-        b.setIcon(icon)
-        b.setIconSize(QSize(16, 16))
-        b.setToolTip(tooltip)
-        b.setFixedSize(QSize(32, 28))
-        b.setCursor(Qt.CursorShape.PointingHandCursor)
-        return b
 
     # ------------------------------------------------------------------
     # Ações
