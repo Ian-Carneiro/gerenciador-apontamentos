@@ -11,10 +11,11 @@ Para cada subpasta dentro de --src, gera um context/<pasta>.md com:
 - funções soltas
 - imports locais (depende de / usado por)
 """
-import ast
+
 import argparse
-from pathlib import Path
+import ast
 from collections import defaultdict
+from pathlib import Path
 
 
 def get_signature(node) -> str:
@@ -73,21 +74,27 @@ def parse_file(path: Path, module_prefix: str) -> dict:
             methods = []
             for item in node.body:
                 if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                    methods.append({
-                        "signature": get_signature(item),
-                        "doc": get_docstring_summary(item),
-                    })
-            info["classes"].append({
-                "name": node.name,
-                "bases": bases,
-                "doc": get_docstring_summary(node),
-                "methods": methods,
-            })
+                    methods.append(
+                        {
+                            "signature": get_signature(item),
+                            "doc": get_docstring_summary(item),
+                        }
+                    )
+            info["classes"].append(
+                {
+                    "name": node.name,
+                    "bases": bases,
+                    "doc": get_docstring_summary(node),
+                    "methods": methods,
+                }
+            )
         elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            info["functions"].append({
-                "signature": get_signature(node),
-                "doc": get_docstring_summary(node),
-            })
+            info["functions"].append(
+                {
+                    "signature": get_signature(node),
+                    "doc": get_docstring_summary(node),
+                }
+            )
 
     return info
 
