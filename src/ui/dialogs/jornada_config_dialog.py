@@ -30,6 +30,7 @@ from PySide6.QtWidgets import (
 from src.core.apontamento_service import ApontamentoService
 from src.db.models import DiaExcecao
 from src.ui import messagebox_utils as mbox
+from src.ui.style.icons import SVG_EDITAR, SVG_LIXEIRA
 from src.ui.ui_helpers import botao_com_icone, icone_de_svg
 
 _DIAS_SEMANA = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]
@@ -82,25 +83,6 @@ def _ymd(d: date) -> tuple[int, int, int]:
 class _BotoesExcecao(QWidget):
     """Botões de editar/remover de uma linha da tabela de exceções."""
 
-    SVG_EDITAR = """
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-         fill="none" stroke="#E8EAF0" stroke-width="1.8"
-         stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 20h9"/>
-        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/>
-    </svg>"""
-
-    SVG_LIXEIRA = """
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-         fill="none" stroke="#E8EAF0" stroke-width="1.8"
-         stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="3 6 5 6 21 6"/>
-        <path d="M19 6l-1 14H6L5 6"/>
-        <path d="M10 11v5"/>
-        <path d="M14 11v5"/>
-        <path d="M9 6V4h6v2"/>
-    </svg>"""
-
     def __init__(self, exc: DiaExcecao, dialog: JornadaConfigDialog, parent=None):
         """Monta os botões editar/remover, ligados aos handlers de `dialog` para `exc`."""
         super().__init__(parent)
@@ -111,9 +93,9 @@ class _BotoesExcecao(QWidget):
         layout.setContentsMargins(6, 2, 6, 2)
         layout.setSpacing(4)
 
-        self._btn_editar = botao_com_icone(icone_de_svg(self.SVG_EDITAR), "Editar exceção")
+        self._btn_editar = botao_com_icone(icone_de_svg(SVG_EDITAR), "Editar exceção")
         self._btn_deletar = botao_com_icone(
-            icone_de_svg(self.SVG_LIXEIRA), "Remover exceção", object_name="btnDel"
+            icone_de_svg(SVG_LIXEIRA), "Remover exceção", object_name="btnDel"
         )
 
         layout.addWidget(self._btn_editar)

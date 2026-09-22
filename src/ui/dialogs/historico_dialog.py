@@ -43,6 +43,7 @@ from PySide6.QtWidgets import (
 from src.core.apontamento_service import ApontamentoService
 from src.db.models import Apontamento
 from src.db.repository import BlocoHistorico
+from src.ui.style.icons import SVG_ADICIONAR, SVG_DIVIDIR, SVG_EDITAR, SVG_LIXEIRA, SVG_RELOGIO
 from src.ui.ui_helpers import botao_com_icone, icone_de_svg
 from src.utils.logger import get_logger
 
@@ -135,118 +136,6 @@ def _item_mono(
 class _BotoesAcao(QWidget):
     """Widget com os 4 botões de ação para uma linha do histórico."""
 
-    # ------------------------------------------------------------------
-    # Ícones SVG embutidos
-    # ------------------------------------------------------------------
-
-    SVG_EDITAR = """
-    <svg xmlns="http://www.w3.org/2000/svg"
-         width="24" height="24"
-         viewBox="0 0 24 24"
-         fill="none"
-         stroke="#E8EAF0"
-         stroke-width="1.8"
-         stroke-linecap="round"
-         stroke-linejoin="round">
-        <path d="M12 20h9"/>
-        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/>
-    </svg>
-    """
-
-    SVG_RELOGIO = """
-    <svg xmlns="http://www.w3.org/2000/svg"
-         width="24" height="24"
-         viewBox="0 0 24 24"
-         fill="none"
-         stroke="#E8EAF0"
-         stroke-width="1.8"
-         stroke-linecap="round"
-         stroke-linejoin="round">
-        <circle cx="12" cy="12" r="9"/>
-        <polyline points="12 7 12 12 15 14"/>
-    </svg>
-    """
-
-    SVG_DIVIDIR = """
-    <svg xmlns="http://www.w3.org/2000/svg"
-         width="24" height="24"
-         viewBox="0 0 24 24"
-         fill="none"
-         stroke="#E8EAF0"
-         stroke-width="1.8"
-         stroke-linecap="round"
-         stroke-linejoin="round">
-        <circle cx="6" cy="6" r="2"/>
-        <circle cx="18" cy="18" r="2"/>
-        <path d="M8 8l8 8"/>
-        <path d="M16 8l-4 4"/>
-        <path d="M12 12l-4 4"/>
-    </svg>
-    """
-
-    SVG_ADICIONAR = """
-        <svg xmlns="http://www.w3.org/2000/svg"
-             width="24" height="24"
-             viewBox="0 0 24 24"
-             fill="none"
-             stroke="#E8EAF0"
-             stroke-width="1.8"
-             stroke-linecap="round"
-             stroke-linejoin="round">
-            <circle cx="12" cy="12" r="9"/>
-            <line x1="12" y1="8" x2="12" y2="16"/>
-            <line x1="8" y1="12" x2="16" y2="12"/>
-        </svg>
-        """
-
-    SVG_LIXEIRA = """
-    <svg xmlns="http://www.w3.org/2000/svg"
-         width="24" height="24"
-         viewBox="0 0 24 24"
-         fill="none"
-         stroke="#E8EAF0"
-         stroke-width="1.8"
-         stroke-linecap="round"
-         stroke-linejoin="round">
-        <polyline points="3 6 5 6 21 6"/>
-        <path d="M19 6l-1 14H6L5 6"/>
-        <path d="M10 11v5"/>
-        <path d="M14 11v5"/>
-        <path d="M9 6V4h6v2"/>
-    </svg>
-    """
-
-    SVG_LIXEIRA_HOVER = """
-    <svg xmlns="http://www.w3.org/2000/svg"
-         width="24" height="24"
-         viewBox="0 0 24 24"
-         fill="none"
-         stroke="#FF6B6B"
-         stroke-width="1.8"
-         stroke-linecap="round"
-         stroke-linejoin="round">
-        <polyline points="3 6 5 6 21 6"/>
-        <path d="M19 6l-1 14H6L5 6"/>
-        <path d="M10 11v5"/>
-        <path d="M14 11v5"/>
-        <path d="M9 6V4h6v2"/>
-    </svg>
-    """
-
-    SVG_DISABLED = """
-    <svg xmlns="http://www.w3.org/2000/svg"
-         width="24" height="24"
-         viewBox="0 0 24 24"
-         fill="none"
-         stroke="#555B72"
-         stroke-width="1.8"
-         stroke-linecap="round"
-         stroke-linejoin="round">
-        <circle cx="12" cy="12" r="9"/>
-        <line x1="4" y1="4" x2="20" y2="20"/>
-    </svg>
-    """
-
     def __init__(self, apontamento: Apontamento, dialog: HistoricoDialog, parent=None):
         """Monta os 5 botões de ação da linha, desabilitando Dividir se o apontamento estiver em execução."""
         super().__init__(parent)
@@ -258,18 +147,18 @@ class _BotoesAcao(QWidget):
         layout.setContentsMargins(6, 2, 6, 2)
         layout.setSpacing(4)
 
-        self._btn_editar = botao_com_icone(icone_de_svg(self.SVG_EDITAR), "Editar projeto/tarefa/nota")
+        self._btn_editar = botao_com_icone(icone_de_svg(SVG_EDITAR), "Editar projeto/tarefa/nota")
 
-        self._btn_ajustar = botao_com_icone(icone_de_svg(self.SVG_RELOGIO), "Ajustar horário")
+        self._btn_ajustar = botao_com_icone(icone_de_svg(SVG_RELOGIO), "Ajustar horário")
 
-        self._btn_dividir = botao_com_icone(icone_de_svg(self.SVG_DIVIDIR), "Dividir apontamento")
+        self._btn_dividir = botao_com_icone(icone_de_svg(SVG_DIVIDIR), "Dividir apontamento")
 
         self._btn_adicionar = botao_com_icone(
-            icone_de_svg(self.SVG_ADICIONAR), "Adicionar apontamento antes/depois"
+            icone_de_svg(SVG_ADICIONAR), "Adicionar apontamento antes/depois"
         )
 
         self._btn_deletar = botao_com_icone(
-            icone_de_svg(self.SVG_LIXEIRA), "Deletar apontamento", object_name="btnDel"
+            icone_de_svg(SVG_LIXEIRA), "Deletar apontamento", object_name="btnDel"
         )
 
         layout.addWidget(self._btn_editar)
