@@ -34,7 +34,16 @@ from src.core.apontamento_service import ApontamentoService
 from src.db.models import Apontamento
 from src.db.repository import ApontamentoError, HorarioInvalidoError
 from src.ui import messagebox_utils as mbox
-from src.ui.style.tokens import ACCENT_TEXT, BORDER, DANGER, TEXT_PRIMARY, TEXT_SECONDARY
+from src.ui.style.tokens import (
+    ACCENT_TEXT,
+    BG_INSET,
+    BORDER,
+    DANGER,
+    TEXT_BRIGHT,
+    TEXT_DIM,
+    TEXT_PRIMARY,
+    TEXT_SECONDARY,
+)
 from src.ui.ui_helpers import campo_caption, truncar_texto
 from src.ui.widgets.hora_field import HoraField
 from src.utils.logger import get_logger
@@ -104,7 +113,7 @@ class DividirDialog(QDialog):
         dur_s = self._apt.duracao_str
         lbl_per = QLabel(f"{ini_s}  ->  {fim_s}  ({dur_s})")
         lbl_per.setStyleSheet(
-            "font-family: 'JetBrains Mono','Consolas',monospace;font-size: 13px; color: #E8EAF0;"
+            f"font-family: 'JetBrains Mono','Consolas',monospace;font-size: 13px; color: {TEXT_BRIGHT};"
         )
         layout.addWidget(lbl_per)
 
@@ -127,7 +136,7 @@ class DividirDialog(QDialog):
 
         self._frame_preview = QFrame()
         self._frame_preview.setStyleSheet(
-            "QFrame { background: #1A1D27; border-radius: 6px; padding: 4px; }"
+            f"QFrame {{ background: {BG_INSET}; border-radius: 6px; padding: 4px; }}"
         )
         preview_layout = QVBoxLayout(self._frame_preview)
         preview_layout.setSpacing(6)
@@ -139,7 +148,7 @@ class DividirDialog(QDialog):
         for lbl in (self._lbl_p1, self._lbl_p2):
             lbl.setStyleSheet(
                 "font-family: 'JetBrains Mono','Consolas',monospace;"
-                "font-size: 13px; color: #8B90A0;"
+                f"font-size: 13px; color: {TEXT_DIM};"
             )
             preview_layout.addWidget(lbl)
 

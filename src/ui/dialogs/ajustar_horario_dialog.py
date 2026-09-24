@@ -33,7 +33,15 @@ from src.core.apontamento_service import ApontamentoService
 from src.db.models import Apontamento
 from src.db.repository import ApontamentoError, HorarioInvalidoError, SobreposicaoError
 from src.ui import messagebox_utils as mbox
-from src.ui.style.tokens import ACCENT_TEXT, BORDER, DANGER, TEXT_PRIMARY, TEXT_SECONDARY
+from src.ui.style.tokens import (
+    ACCENT_TEXT,
+    BORDER,
+    DANGER,
+    GREEN_BRIGHT,
+    TEXT_PRIMARY,
+    TEXT_SECONDARY,
+    TEXT_SUBTLE,
+)
 from src.ui.ui_helpers import campo_caption, truncar_texto
 from src.ui.widgets.hora_field import HoraField
 from src.utils.logger import get_logger
@@ -94,7 +102,7 @@ class AjustarHorarioDialog(QDialog):
         lbl_ini_atual = QLabel(self._apt.inicio.strftime("%H:%M:%S"))
         lbl_ini_atual.setStyleSheet(
             "font-family: 'JetBrains Mono','Consolas',monospace;"
-            "font-size: 13px; color: #555A6E; min-width: 80px;"
+            f"font-size: 13px; color: {TEXT_SUBTLE}; min-width: 80px;"
         )
         row_ini.addWidget(QLabel("atual:"))
         row_ini.addWidget(lbl_ini_atual)
@@ -114,7 +122,7 @@ class AjustarHorarioDialog(QDialog):
             lbl_fim_atual = QLabel(self._apt.fim.strftime("%H:%M:%S"))
             lbl_fim_atual.setStyleSheet(
                 "font-family: 'JetBrains Mono','Consolas',monospace;"
-                "font-size: 13px; color: #555A6E; min-width: 80px;"
+                f"font-size: 13px; color: {TEXT_SUBTLE}; min-width: 80px;"
             )
             row_fim.addWidget(QLabel("atual:"))
             row_fim.addWidget(lbl_fim_atual)
@@ -145,7 +153,7 @@ class AjustarHorarioDialog(QDialog):
         layout.addWidget(sep)
 
         self._lbl_preview = QLabel()
-        self._lbl_preview.setStyleSheet("font-size: 13px; color: #7EC99A; padding: 4px 0;")
+        self._lbl_preview.setStyleSheet(f"font-size: 13px; color: {GREEN_BRIGHT}; padding: 4px 0;")
         layout.addWidget(self._lbl_preview)
         self._atualizar_preview()
 

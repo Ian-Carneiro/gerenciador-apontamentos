@@ -44,6 +44,16 @@ from src.core.apontamento_service import ApontamentoService
 from src.db.models import Apontamento
 from src.db.repository import BlocoHistorico
 from src.ui.style.icons import SVG_ADICIONAR, SVG_DIVIDIR, SVG_EDITAR, SVG_LIXEIRA, SVG_RELOGIO
+from src.ui.style.tokens import (
+    BG_INSET,
+    BG_ROW_ALT,
+    BG_TOTAL,
+    GREEN_BRIGHT,
+    GREEN_MUTED,
+    RED_MUTED,
+    TEXT_BRIGHT,
+    TEXT_DIM,
+)
 from src.ui.ui_helpers import botao_com_icone, icone_de_svg
 from src.utils.logger import get_logger
 
@@ -62,21 +72,21 @@ N_COLUNAS = 7
 CABECALHOS = ["Data", "Projeto", "Tarefa", "Início", "Fim", "Horas", "Ações"]
 
 # -- Cores --------------------------------------------------------------------─
-COR_BG_PAR = QColor("#1A1D27")
-COR_BG_IMPAR = QColor("#1E2235")
-COR_BG_TOTAL = QColor("#131620")
-COR_TEXTO = QColor("#E8EAF0")
-COR_MUTED = QColor("#8B90A0")
-COR_VERDE = QColor("#7EC99A")
-COR_VERMELHO = QColor("#C0392B")
-COR_ACENTO = QColor("#4D7C5F")
+COR_BG_PAR = QColor(BG_INSET)
+COR_BG_IMPAR = QColor(BG_ROW_ALT)
+COR_BG_TOTAL = QColor(BG_TOTAL)
+COR_TEXTO = QColor(TEXT_BRIGHT)
+COR_MUTED = QColor(TEXT_DIM)
+COR_VERDE = QColor(GREEN_BRIGHT)
+COR_VERMELHO = QColor(RED_MUTED)
+COR_ACENTO = QColor(GREEN_MUTED)
 
-SVG_NOTA = """
+SVG_NOTA = f"""
 <svg xmlns="http://www.w3.org/2000/svg"
      width="14" height="14"
      viewBox="0 0 24 24"
      fill="none"
-     stroke="#7EC99A"
+     stroke="{GREEN_BRIGHT}"
      stroke-width="2"
      stroke-linecap="round"
      stroke-linejoin="round">

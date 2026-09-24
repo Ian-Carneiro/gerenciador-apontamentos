@@ -11,12 +11,14 @@ Uso:
     btn = botao_com_icone(icone_de_svg(SVG_EDITAR), "Editar")
 """
 
-SVG_EDITAR = """
+from src.ui.style.tokens import TEXT_BRIGHT
+
+SVG_EDITAR = f"""
 <svg xmlns="http://www.w3.org/2000/svg"
      width="24" height="24"
      viewBox="0 0 24 24"
      fill="none"
-     stroke="#E8EAF0"
+     stroke="{TEXT_BRIGHT}"
      stroke-width="1.8"
      stroke-linecap="round"
      stroke-linejoin="round">
@@ -25,12 +27,12 @@ SVG_EDITAR = """
 </svg>
 """
 
-SVG_RELOGIO = """
+SVG_RELOGIO = f"""
 <svg xmlns="http://www.w3.org/2000/svg"
      width="24" height="24"
      viewBox="0 0 24 24"
      fill="none"
-     stroke="#E8EAF0"
+     stroke="{TEXT_BRIGHT}"
      stroke-width="1.8"
      stroke-linecap="round"
      stroke-linejoin="round">
@@ -39,12 +41,12 @@ SVG_RELOGIO = """
 </svg>
 """
 
-SVG_DIVIDIR = """
+SVG_DIVIDIR = f"""
 <svg xmlns="http://www.w3.org/2000/svg"
      width="24" height="24"
      viewBox="0 0 24 24"
      fill="none"
-     stroke="#E8EAF0"
+     stroke="{TEXT_BRIGHT}"
      stroke-width="1.8"
      stroke-linecap="round"
      stroke-linejoin="round">
@@ -56,12 +58,12 @@ SVG_DIVIDIR = """
 </svg>
 """
 
-SVG_ADICIONAR = """
+SVG_ADICIONAR = f"""
     <svg xmlns="http://www.w3.org/2000/svg"
          width="24" height="24"
          viewBox="0 0 24 24"
          fill="none"
-         stroke="#E8EAF0"
+         stroke="{TEXT_BRIGHT}"
          stroke-width="1.8"
          stroke-linecap="round"
          stroke-linejoin="round">
@@ -71,12 +73,12 @@ SVG_ADICIONAR = """
     </svg>
     """
 
-SVG_LIXEIRA = """
+SVG_LIXEIRA = f"""
 <svg xmlns="http://www.w3.org/2000/svg"
      width="24" height="24"
      viewBox="0 0 24 24"
      fill="none"
-     stroke="#E8EAF0"
+     stroke="{TEXT_BRIGHT}"
      stroke-width="1.8"
      stroke-linecap="round"
      stroke-linejoin="round">

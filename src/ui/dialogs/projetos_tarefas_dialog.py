@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
 )
 
 from src.db.repository import ApontamentoRepository
+from src.ui.style.tokens import GREEN_ACTION, TEXT_ON_ACCENT
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -75,7 +76,7 @@ class ProjetosTarefasDialog(QDialog):
 
         btn_salvar = QPushButton("💾 Salvar Alterações")
         btn_salvar.setStyleSheet(
-            "background:#4CAF50; color:white; font-weight:700; padding:6px 16px;"
+            f"background:{GREEN_ACTION}; color:{TEXT_ON_ACCENT}; font-weight:700; padding:6px 16px;"
         )
         btn_salvar.clicked.connect(self._salvar)
         botoes.addWidget(btn_salvar)

@@ -26,6 +26,7 @@ from src.core.apontamento_service import ApontamentoService
 from src.db.models import Apontamento
 from src.db.repository import ApontamentoError
 from src.ui import messagebox_utils as mbox
+from src.ui.style.tokens import TEXT_BRIGHT, TEXT_DIM
 from src.ui.ui_helpers import campo_caption
 from src.ui.widgets.filterable_combo import FilterableComboBox
 from src.utils.logger import get_logger
@@ -67,14 +68,14 @@ class EditarDialog(QDialog):
 
         # Cabeçalho
         lbl_titulo = QLabel("Editar Apontamento")
-        lbl_titulo.setStyleSheet("font-size: 14px; font-weight: 700; color: #E8EAF0;")
+        lbl_titulo.setStyleSheet(f"font-size: 14px; font-weight: 700; color: {TEXT_BRIGHT};")
         layout.addWidget(lbl_titulo)
 
         # Info do intervalo (somente leitura)
         inicio_str = self._apt.inicio.strftime("%d/%m/%Y  %H:%M:%S")
         fim_str = self._apt.fim.strftime("%H:%M:%S") if self._apt.fim else "em execução"
         lbl_info = QLabel(f"{inicio_str}  ->  {fim_str}  ({self._apt.duracao_str})")
-        lbl_info.setStyleSheet("color: #8B90A0; font-size: 12px;")
+        lbl_info.setStyleSheet(f"color: {TEXT_DIM}; font-size: 12px;")
         layout.addWidget(lbl_info)
 
         layout.addSpacing(4)
@@ -124,7 +125,6 @@ class EditarDialog(QDialog):
         self._combo_projeto.valor_selecionado.emit(self._apt.projeto)
         self._combo_tarefa.set_valor(self._apt.tarefa)
         self._nota.setPlainText(self._apt.nota)
-
 
     # -- Salvar ----------------------------------------------------------------
 
